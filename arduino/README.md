@@ -21,8 +21,9 @@ Step-by-step build instructions: `Sensor Node Build Guide` in the vault (`04 Bui
 | `arduino/00_blink` … `05_soil_moisture` | One small test sketch per build step. Upload them in order. |
 | `arduino/calibrate_analog` | Prints the rain plate and soil fork once per second, for calibration |
 | `arduino/sensor_node` | The full sketch: all sensors, JSON output, traffic light |
+| `arduino/cloud_node` | Measures every 5 s and posts the readings to the Azure backend over WiFi |
 | `pi/` | `blight_node.py`: reads the Arduino over USB, logs to SQLite, scores risk |
-| `scripts/` | `upload.sh` (compile + upload a sketch), `monitor.sh` (see the Arduino's output) |
+| `scripts/` | `upload.sh` (compile + upload a sketch), `monitor.sh` (see the Arduino's output), `test_ingest.sh` (one test POST to the backend) |
 
 ## Requirements (Mac)
 
@@ -38,6 +39,21 @@ Step-by-step build instructions: `Sensor Node Build Guide` in the vault (`04 Bui
 
 Or in a terminal: `./scripts/upload.sh 02_dht11`, then `./scripts/monitor.sh`.
 
+## Send to Azure over WiFi (`cloud_node`)
+
+The board posts its readings itself to `POST /api/ingest` (contract: "Arduino HTTP contract" in `azure/README.md`). No Pi needed.
+
+1. `cp arduino/cloud_node/arduino_secrets.h.template arduino/cloud_node/arduino_secrets.h` and fill in WiFi name, password and the ingest key (`INGEST_SHARED_SECRET` of the Function App). The file is gitignored.
+2. Check the backend and key: `./scripts/test_ingest.sh` → `HTTP 200` with `{"written": 1}`, then the reading comes back from `/api/readings` (device `test-box`).
+3. `./scripts/upload.sh cloud_node`, then `./scripts/monitor.sh`. Every 5 s you should see `POST [...]` and `HTTP 200 {"written": n}`.
+
+How it works:
+
+- Waits for WiFi and network time at start, then sets the built-in RTC (resynced hourly) for the UTC `timestamp`.
+- Sends as `deviceId` `box-01`, mapped to the contract fields: DHT11 → `temperature_c`, `humidity_pct`; rain plate below 900 → `rain` = 1; soil fork raw 985 (dry) … 670 (wet) → `soil_pct` 0–100.
+- A sensor that is not wired up yet: set its `..._SENSOR_CONNECTED` flag to `false` and it is sent as `0`. A failed DHT read is also sent as `0`, with a warning on the serial monitor.
+- If WiFi or the backend is down, readings stay in a backlog (up to 36, about 3 min) and are sent together in one array once it works again.
+
 ## Progress
 
 - [x] Step 0: toolchain works, `00_blink` runs on the board
@@ -48,3 +64,4 @@ Or in a terminal: `./scripts/upload.sh 02_dht11`, then `./scripts/monitor.sh`.
 - [x] Step 5: soil moisture (dry soil 970–1000, wet about 650–690)
 - [x] Step 6: full `sensor_node` sketch sends JSON lines; the Pi/computer can set the light (BMP180 not connected yet)
 - [ ] Step 7: Raspberry Pi receives data
+- [ ] Step 8: `cloud_node` posts readings to Azure over WiFi every 5 s (compiles; not yet run on the board)
