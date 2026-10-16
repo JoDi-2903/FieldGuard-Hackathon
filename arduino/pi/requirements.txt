@@ -1,0 +1,2 @@
+pyserial>=3.5
+azure-iot-device>=2.13  # optional, only for the IoT Hub upload

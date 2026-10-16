@@ -1,0 +1,39 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Upload sketch to Arduino",
+      "type": "shell",
+      "command": "./scripts/upload.sh ${input:sketch}",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Open serial monitor",
+      "type": "shell",
+      "command": "./scripts/monitor.sh",
+      "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "sketch",
+      "type": "pickString",
+      "description": "Which sketch do you want to upload?",
+      "options": [
+        "00_blink",
+        "01_traffic_light",
+        "02_dht11",
+        "03_leaf_wetness",
+        "04_bmp180",
+        "05_soil_moisture",
+        "calibrate_analog",
+        "sensor_node"
+      ],
+      "default": "00_blink"
+    }
+  ]
+}
