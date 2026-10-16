@@ -45,6 +45,9 @@ terraform.rc
 
 brainstorming.md
 
+# Dashboard config with real deployment URLs (use config.js.template as base)
+azure/dashboard/config.js
+
 # Python compiled bytecode
 __pycache__/
 *.pyc
