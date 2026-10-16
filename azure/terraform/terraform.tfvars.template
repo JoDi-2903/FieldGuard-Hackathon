@@ -1,0 +1,23 @@
+# Copy this file to `terraform.tfvars` and fill in real values.
+# `terraform.tfvars` is gitignored (contains secrets) — this .template is the only
+# version committed. Do NOT put real secrets in this template.
+
+# Required: the subscription to deploy into.
+subscription_id = "00000000-0000-0000-0000-000000000000"
+
+# Optional overrides (defaults shown).
+project         = "fieldguard"
+location        = "westeurope"
+openai_location = "swedencentral" # must offer the chosen model/version
+swa_location    = "westus2"       # SWA Free regions: westus2, eastus2, centralus, eastasia
+
+# Optional: pin an Azure OpenAI model version that is GA in openai_location.
+# openai_model_version = "2025-08-07"
+# openai_capacity      = 10
+
+# Ingest shared secret.
+# RECOMMENDED: leave this empty and set the secret out-of-band after apply:
+#   az functionapp config appsettings set -g <rg> -n <func> --settings INGEST_SHARED_SECRET=<secret>
+# so it never gets written to terraform.tfstate (which is plaintext on disk).
+# Only set it here if you accept it being stored in local state.
+ingest_secret = ""
