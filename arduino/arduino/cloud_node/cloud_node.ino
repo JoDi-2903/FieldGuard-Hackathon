@@ -1,6 +1,7 @@
 // Field box that sends its readings straight to the Azure backend over WiFi.
 // Every 5 s it measures all sensors and POSTs the unsent readings as one JSON array
 // to /api/ingest (see "Arduino HTTP contract" in azure/README.md).
+// Every 30 s it asks /api/light for this box's risk colour and shows it on the LED traffic light.
 // Copy arduino_secrets.h.template to arduino_secrets.h and fill it in before uploading.
 
 #include <WiFiS3.h>
@@ -12,6 +13,7 @@
 // --- Backend ---------------------------------------------------------------
 const char INGEST_HOST[] = "fieldguard-func-32vxg3.azurewebsites.net";
 const char INGEST_PATH[] = "/api/ingest";
+const char LIGHT_PATH[] = "/api/light?deviceId=";
 const uint16_t HTTPS_PORT = 443;
 const char DEVICE_ID[] = "box-01";
 const unsigned long HTTP_RESPONSE_TIMEOUT_MS = 15000UL;  // Consumption plan cold start can take seconds
@@ -27,6 +29,9 @@ const uint8_t PIN_RAIN_POWER = 7;
 const uint8_t PIN_SOIL_POWER = 8;
 const uint8_t PIN_RAIN_ANALOG = A0;
 const uint8_t PIN_SOIL_ANALOG = A1;
+const uint8_t PIN_LED_RED = 9;
+const uint8_t PIN_LED_YELLOW = 10;
+const uint8_t PIN_LED_GREEN = 11;
 
 // --- Calibration (see arduino/README.md, steps 3 and 5) ----------------------
 const int RAIN_WET_THRESHOLD_RAW = 900;  // below this the leaf plate is wet
@@ -34,7 +39,8 @@ const int SOIL_RAW_DRY = 985;            // 0 % soil moisture
 const int SOIL_RAW_WET = 670;            // 100 % soil moisture
 
 // --- Timing -------------------------------------------------------------------
-const unsigned long SAMPLE_INTERVAL_MS = 5000UL;
+const unsigned long SAMPLE_INTERVAL_MS = 5000UL;  // demo; use 900000UL (15 min) in the field
+const unsigned long LIGHT_POLL_INTERVAL_MS = 30000UL;
 const unsigned long RTC_RESYNC_INTERVAL_MS = 3600000UL;  // the R4 RTC drifts, so resync hourly
 const unsigned long WIFI_CONNECT_WAIT_MS = 10000UL;
 const uint8_t TIME_SYNC_ATTEMPTS = 10;
@@ -71,21 +77,36 @@ uint8_t backlogStart = 0;
 uint8_t backlogCount = 0;
 unsigned long lastSampleMs = 0;
 unsigned long lastRtcSyncMs = 0;
+unsigned long lastLightPollMs = 0;
+
+// Risk colour from the backend. The LEDs keep the last known colour while offline.
+enum RiskLight { LIGHT_UNKNOWN, LIGHT_GREEN, LIGHT_YELLOW, LIGHT_RED };
 
 void setup() {
   Serial.begin(9600);
   configureSensorPins();
+  configureLedPinsAndTurnOff();
   startDhtAndDiscardFirstReading();
   checkWifiModuleAndFirmware();
   connectToWifiAndWait();
   syncRtcFromNetworkTimeAndWait();
   lastSampleMs = millis() - SAMPLE_INTERVAL_MS;  // take the first reading immediately
+  lastLightPollMs = millis() - LIGHT_POLL_INTERVAL_MS;
 }
 
 void loop() {
-  if (!isTimeToSample()) {
-    return;
+  if (isTimeToSample()) {
+    sampleAndPostBacklog();
   }
+  if (isTimeToPollLight()) {
+    fetchRiskLightAndShowIt();
+  }
+}
+
+// --------------------------------------------------------------------------- //
+// Main tasks
+// --------------------------------------------------------------------------- //
+void sampleAndPostBacklog() {
   lastSampleMs = millis();
   appendToBacklog(readAllSensorsAsContractReading());
   if (!ensureWifiConnected()) {
@@ -99,6 +120,18 @@ void loop() {
   }
 }
 
+// Offline or no answer: the LEDs keep showing the last known colour.
+void fetchRiskLightAndShowIt() {
+  lastLightPollMs = millis();
+  if (WiFi.status() != WL_CONNECTED) {
+    return;
+  }
+  RiskLight light;
+  if (tryFetchRiskLight(light)) {
+    showRiskLight(light);
+  }
+}
+
 // --------------------------------------------------------------------------- //
 // Setup
 // --------------------------------------------------------------------------- //
@@ -107,6 +140,13 @@ void configureSensorPins() {
   pinMode(PIN_SOIL_POWER, OUTPUT);
   digitalWrite(PIN_RAIN_POWER, LOW);
   digitalWrite(PIN_SOIL_POWER, LOW);
+}
+
+void configureLedPinsAndTurnOff() {
+  pinMode(PIN_LED_RED, OUTPUT);
+  pinMode(PIN_LED_YELLOW, OUTPUT);
+  pinMode(PIN_LED_GREEN, OUTPUT);
+  showRiskLight(LIGHT_UNKNOWN);
 }
 
 // The first DHT11 read after power-up returns garbage (seen: 0.9 °C, 0 %), so it is thrown away.
@@ -279,6 +319,34 @@ int powerProbeAndReadAverage(uint8_t powerPin, uint8_t analogPin) {
 }
 
 // --------------------------------------------------------------------------- //
+// Traffic light
+// --------------------------------------------------------------------------- //
+bool isTimeToPollLight() {
+  return millis() - lastLightPollMs >= LIGHT_POLL_INTERVAL_MS;
+}
+
+// Unknown (no score yet) leaves all LEDs off.
+void showRiskLight(RiskLight light) {
+  digitalWrite(PIN_LED_RED, light == LIGHT_RED);
+  digitalWrite(PIN_LED_YELLOW, light == LIGHT_YELLOW);
+  digitalWrite(PIN_LED_GREEN, light == LIGHT_GREEN);
+}
+
+// /api/light answers with one plain word: red, yellow, green or unknown.
+RiskLight parseRiskLight(const String &body) {
+  if (body.indexOf("red") >= 0) {
+    return LIGHT_RED;
+  }
+  if (body.indexOf("yellow") >= 0) {
+    return LIGHT_YELLOW;
+  }
+  if (body.indexOf("green") >= 0) {
+    return LIGHT_GREEN;
+  }
+  return LIGHT_UNKNOWN;
+}
+
+// --------------------------------------------------------------------------- //
 // Backlog
 // --------------------------------------------------------------------------- //
 void appendToBacklog(const ContractReading &reading) {
@@ -315,6 +383,44 @@ bool postBacklogToIngest() {
   return status == 200;
 }
 
+// Returns true only when the backend answered 200; the colour is then in `light`.
+bool tryFetchRiskLight(RiskLight &light) {
+  if (!client.connect(INGEST_HOST, HTTPS_PORT)) {
+    Serial.println(F("HTTPS connect to light failed"));
+    return false;
+  }
+  sendLightRequest();
+  int status = readStatusCode();
+  skipResponseHeaders();
+  String body = readResponseBody();
+  client.stop();
+  if (status != 200) {
+    Serial.print(F("Light HTTP "));
+    Serial.println(status);
+    return false;
+  }
+  light = parseRiskLight(body);
+  logRiskLight(light);
+  return true;
+}
+
+void sendLightRequest() {
+  client.print(F("GET "));
+  client.print(LIGHT_PATH);
+  client.print(DEVICE_ID);
+  client.println(F(" HTTP/1.1"));
+  client.print(F("Host: "));
+  client.println(INGEST_HOST);
+  client.println(F("Connection: close"));
+  client.println();
+}
+
+void logRiskLight(RiskLight light) {
+  static const char *const NAMES[] = {"unknown", "green", "yellow", "red"};
+  Serial.print(F("Light: "));
+  Serial.println(NAMES[light]);
+}
+
 void sendIngestRequest() {
   ByteCounter counter;
   printBacklogAsJson(counter);
@@ -339,9 +445,7 @@ void sendIngestRequest() {
 }
 
 int readStatusCodeAndLogResponse() {
-  client.setTimeout(HTTP_RESPONSE_TIMEOUT_MS);
-  String statusLine = client.readStringUntil('\n');  // e.g. "HTTP/1.1 200 OK"
-  int status = statusLine.length() > 12 ? statusLine.substring(9, 12).toInt() : 0;
+  int status = readStatusCode();
   skipResponseHeaders();
   String body = extractJsonFromChunkedBody(readResponseBody());
   Serial.print(F("HTTP "));
@@ -349,6 +453,12 @@ int readStatusCodeAndLogResponse() {
   Serial.print(' ');
   Serial.println(body);
   return status;
+}
+
+int readStatusCode() {
+  client.setTimeout(HTTP_RESPONSE_TIMEOUT_MS);
+  String statusLine = client.readStringUntil('\n');  // e.g. "HTTP/1.1 200 OK"
+  return statusLine.length() > 12 ? statusLine.substring(9, 12).toInt() : 0;
 }
 
 void skipResponseHeaders() {

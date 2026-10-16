@@ -7,9 +7,11 @@ Usage:
     export TELEMETRY_CONNECTION_STRING="$(terraform output -raw telemetry_connection_string)"
     python seed_fields.py
 
-Each field maps to a sensor `deviceId`. For the hackathon demo, point two example
-fields at the real sensor box and leave one without a device to show the
-"no data / stale" caveat path.
+Each field maps to a sensor `deviceId`. For the hackathon demo:
+- field-a is the real box (box-01) in demo mode: 10-minute "nights", so spraying the
+  leaf plate for 3 minutes turns it yellow. Set "demoMode": False for real use.
+- field-b is box-02, fed by arduino/scripts/replay_blight_nights.py (4 blight nights => red).
+- field-c has no device, to show the "no data / stale" caveat path.
 """
 
 from __future__ import annotations
@@ -23,26 +25,29 @@ DEMO_FIELDS = [
     {
         "RowKey": "field-a",
         "name": "Field A - North plot",
-        "crop": "potato",
+        "crop": "maize",
         "plantingDate": "2026-09-15",
         "deviceId": "box-01",
         "knownCases": "none reported",
+        "demoMode": True,
     },
     {
         "RowKey": "field-b",
         "name": "Field B - River plot",
-        "crop": "potato",
+        "crop": "maize",
         "plantingDate": "2026-09-20",
         "deviceId": "box-02",
-        "knownCases": "late blight confirmed on neighbouring farm",
+        "knownCases": "northern corn leaf blight confirmed on neighbouring farm",
+        "demoMode": False,
     },
     {
         "RowKey": "field-c",
         "name": "Field C - Hill plot (no sensor yet)",
-        "crop": "tomato",
+        "crop": "maize",
         "plantingDate": "2026-09-10",
         "deviceId": "",
         "knownCases": "none reported",
+        "demoMode": False,
     },
 ]
 

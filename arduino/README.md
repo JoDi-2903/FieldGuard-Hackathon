@@ -10,7 +10,7 @@ date: 2026-10-16
 
 Field sensor node for maize leaf blight early warning (BCG Platinion × Welthungerhilfe hackathon, "Grow" case, problem 1).
 
-An **Arduino UNO R4 WiFi** reads leaf wetness, temperature, humidity and soil moisture and sends one JSON line over USB. A **Raspberry Pi** stores the readings, counts "blight nights" (≥ 6 h leaf wetness at 18–27 °C) and sets a 🟢/🟡/🔴 traffic light.
+An **Arduino UNO R4 WiFi** reads leaf wetness, temperature, humidity and soil moisture and posts them straight to the Azure backend over WiFi (`cloud_node`). Azure counts "blight nights" (≥ 6 h leaf wetness at 18–27 °C) and the box shows the result on a 🟢/🟡/🔴 LED traffic light. The Raspberry Pi gateway (`pi/`) is no longer needed; it is kept for an offline setup.
 
 Step-by-step build instructions: `Sensor Node Build Guide` in the vault (`04 Build/`).
 
@@ -21,7 +21,7 @@ Step-by-step build instructions: `Sensor Node Build Guide` in the vault (`04 Bui
 | `arduino/00_blink` … `05_soil_moisture` | One small test sketch per build step. Upload them in order. |
 | `arduino/calibrate_analog` | Prints the rain plate and soil fork once per second, for calibration |
 | `arduino/sensor_node` | The full sketch: all sensors, JSON output, traffic light |
-| `arduino/cloud_node` | Measures every 5 s and posts the readings to the Azure backend over WiFi |
+| `arduino/cloud_node` | Measures every 5 s, posts the readings to the Azure backend over WiFi, shows the risk colour on the LEDs |
 | `pi/` | `blight_node.py`: reads the Arduino over USB, logs to SQLite, scores risk |
 | `scripts/` | `upload.sh` (compile + upload a sketch), `monitor.sh` (see the Arduino's output), `test_ingest.sh` (one test POST to the backend) |
 
@@ -53,6 +53,8 @@ How it works:
 - Sends as `deviceId` `box-01`, mapped to the contract fields: DHT11 → `temperature_c`, `humidity_pct`; rain plate below 900 → `rain` = 1; soil fork raw 985 (dry) … 670 (wet) → `soil_pct` 0–100.
 - A sensor that is not wired up yet: set its `..._SENSOR_CONNECTED` flag to `false` and it is sent as `0`. A failed DHT read is also sent as `0`, with a warning on the serial monitor.
 - If WiFi or the backend is down, readings stay in a backlog (up to 36, about 3 min) and are sent together in one array once it works again.
+- Every 30 s it asks `GET /api/light?deviceId=box-01` for its colour and lights red (D9), yellow (D10) or green (D11), same wiring as Step 1. No score yet: all off. Offline: keeps the last colour.
+- For the field, set `SAMPLE_INTERVAL_MS` to `900000UL` (15 min). The backend computes wet hours from the timestamps, so no other change is needed.
 
 ## Progress
 
@@ -63,5 +65,5 @@ How it works:
 - [ ] Step 4: BMP180 temperature (if available)
 - [x] Step 5: soil moisture (dry soil 970–1000, wet about 650–690)
 - [x] Step 6: full `sensor_node` sketch sends JSON lines; the Pi/computer can set the light (BMP180 not connected yet)
-- [ ] Step 7: Raspberry Pi receives data
+- [x] Step 7: ~~Raspberry Pi receives data~~ replaced: `cloud_node` posts to Azure over WiFi (HTTP 200 every 5 s) and polls `/api/light` for the LEDs
 - [ ] Step 8: `cloud_node` posts readings to Azure over WiFi every 5 s (compiles; not yet run on the board)
