@@ -41,7 +41,7 @@ Or in a terminal: `./scripts/upload.sh 02_dht11`, then `./scripts/monitor.sh`.
 
 - [x] Step 0: toolchain works, `00_blink` runs on the board
 - [x] Step 1: traffic light from 3 LEDs + 1 kΩ resistors (pins 9, 10, 11)
-- [ ] Step 2: DHT11 temperature + humidity
+- [x] Step 2: DHT11 temperature + humidity on D2 (room 25.3 °C / 67%, breath test 98%)
 - [ ] Step 3: rain plate as leaf wetness sensor + calibration
 - [ ] Step 4: BMP180 temperature (if available)
 - [ ] Step 5: soil moisture
