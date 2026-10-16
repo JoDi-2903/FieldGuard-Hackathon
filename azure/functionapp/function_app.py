@@ -1,15 +1,19 @@
 """FieldGuard Azure Functions (Python v2).
 
 Endpoints:
-  POST /api/ingest     - Arduino pushes a batch of sensor readings (X-Ingest-Key).
-  GET  /api/readings   - time-series for the dashboard charts.
-  GET  /api/risk       - latest risk score per field, ranked (the visit list).
-  GET  /api/light      - plain-text colour for one box's traffic light (red/yellow/green/unknown).
-  POST /api/score_now  - recompute all risk scores on demand (X-Ingest-Key).
-  (timer) score_timer  - recompute all risk scores every ~20 min.
+  POST /api/ingest        - Arduino pushes a batch of sensor readings (X-Ingest-Key).
+  GET  /api/readings      - time-series for the dashboard charts.
+  GET  /api/risk          - latest risk score per field, ranked (the visit list).
+  GET  /api/light         - plain-text colour for one box's traffic light (red/yellow/green/unknown).
+  GET  /api/fields        - list configured fields (farm<->field mapping).
+  GET  /api/farms/{id}    - aggregated, dashboard-shaped detail for one field.
+  POST /api/score_now     - recompute all risk scores on demand (X-Ingest-Key).
+  (timer) score_timer     - recompute all risk scores every ~20 min.
 
 CORS is handled by the platform (Terraform site_config.cors / local Host.CORS),
-so handlers never emit Access-Control-* headers themselves.
+so handlers never emit Access-Control-* headers themselves. In production the
+dashboard reaches these routes same-origin through the Static Web App's linked
+`/api` proxy; CORS still covers direct device ingest and local development.
 """
 
 from __future__ import annotations
@@ -23,6 +27,7 @@ import os
 import azure.functions as func
 
 import scoring
+import views
 from storage import (
     classify_quality,
     fields_table,
@@ -39,6 +44,8 @@ logger = logging.getLogger("fieldguard")
 
 # Only the columns the scorer uses, so a week of 5-second readings stays a small download.
 SCORING_COLUMNS = ["deviceTimestamp", "temperature_c", "humidity_pct", "rain", "soil_pct", "quality"]
+# How much history the farm-detail view aggregates (7 daily sparkline buckets).
+DETAIL_WINDOW_HOURS = 24 * 7
 
 
 # --------------------------------------------------------------------------- #
@@ -94,8 +101,17 @@ def _blight_nights_from(risk_entity: dict) -> int | None:
     return (features.get("blight_rule") or {}).get("blight_nights")
 
 
+def _get_field(field_id: str) -> dict | None:
+    return next(
+        iter(fields_table().query_entities(
+            "PartitionKey eq 'field' and RowKey eq @rk", parameters={"rk": field_id}
+        )),
+        None,
+    )
+
+
 def _score_all_fields() -> list[dict]:
-    """Recompute and persist a risk score for every configured field."""
+    """Recompute and persist a risk score (plus AI alerts/call/steps) for every field."""
     now = utcnow()
     results = []
     for field in fields_table().query_entities("PartitionKey eq 'field'"):
@@ -108,6 +124,19 @@ def _score_all_fields() -> list[dict]:
 
         risk = scoring.score_field(field, features)
         risk = scoring.apply_blight_rule_floor(risk, features)
+
+        # Secondary AI outputs are best-effort — a failure here must not drop the score.
+        try:
+            alerts = scoring.generate_alerts(field, features, risk)
+        except Exception:  # noqa: BLE001 - log and continue with no alerts
+            logger.exception("alert generation failed for %s", field_id)
+            alerts = []
+        try:
+            call = scoring.generate_call(field, features, risk)
+        except Exception:  # noqa: BLE001 - log and continue with no call
+            logger.exception("call generation failed for %s", field_id)
+            call = None
+
         entity = {
             "PartitionKey": field_id,
             "RowKey": inverted_rowkey(now),
@@ -117,6 +146,9 @@ def _score_all_fields() -> list[dict]:
             "reasoning": risk.reasoning,
             "recommended_action": risk.recommended_action,
             "data_caveats": risk.data_caveats,
+            "steps_json": json.dumps([s.model_dump() for s in risk.steps], default=str),
+            "alerts_json": json.dumps(alerts, default=str),
+            "call_json": json.dumps(call, default=str) if call else "",
             "features_json": json.dumps(features, default=str),
             "model": os.environ.get("AZURE_OPENAI_DEPLOYMENT", ""),
             "scoredAt": now,
@@ -215,6 +247,7 @@ def risk(req: func.HttpRequest) -> func.HttpResponse:
                 "reasoning": latest.get("reasoning"),
                 "recommended_action": latest.get("recommended_action"),
                 "data_caveats": latest.get("data_caveats"),
+                "steps": json.loads(latest.get("steps_json") or "[]"),
                 "scoredAt": latest.get("scoredAt").isoformat() if latest.get("scoredAt") else None,
             }
         )
@@ -240,6 +273,39 @@ def light(req: func.HttpRequest) -> func.HttpResponse:
             colors.append(latest["color"])
     color = max(colors, key=scoring.COLOR_RANK.get) if colors else "unknown"
     return func.HttpResponse(color, mimetype="text/plain")
+
+
+@app.route(route="fields", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)
+def fields(req: func.HttpRequest) -> func.HttpResponse:
+    """List the configured fields (so the dashboard can map farms to fields)."""
+    out = [
+        {
+            "fieldId": f["RowKey"],
+            "name": f.get("name"),
+            "crop": f.get("crop"),
+            "plantingDate": f.get("plantingDate"),
+            "deviceId": f.get("deviceId"),
+            "knownCases": f.get("knownCases"),
+        }
+        for f in fields_table().query_entities("PartitionKey eq 'field'")
+    ]
+    return _json(out)
+
+
+@app.route(route="farms/{fieldId}", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)
+def farm_detail(req: func.HttpRequest) -> func.HttpResponse:
+    """Aggregated, dashboard-shaped detail for one field: sensors, disease, alerts, call, steps."""
+    field_id = req.route_params.get("fieldId")
+    field = _get_field(field_id)
+    if field is None:
+        return _json({"error": f"unknown field '{field_id}'"}, status_code=404)
+
+    now = utcnow()
+    device_id = field.get("deviceId")
+    start = now - dt.timedelta(hours=DETAIL_WINDOW_HOURS)
+    readings = _read_since(device_id, start, now) if device_id else []
+    risk_row = _latest_risk_entity(field_id)
+    return _json(views.build_farm_detail(field, readings, risk_row, now))
 
 
 @app.route(route="score_now", methods=["POST"], auth_level=func.AuthLevel.ANONYMOUS)

@@ -22,6 +22,7 @@ from storage import utcnow
 
 # --- Tunable, transparent constants (the "model" layer) ---
 HIGH_HUMIDITY_PCT = 90.0      # secondary leaf-wetness proxy (DHT11 is unreliable above 90 %)
+NOMINAL_INTERVAL_MIN = 5      # assumed cadence to turn reading counts into hours (views.py)
 RECENT_WINDOW_HOURS = 48      # window for the descriptive stats; the blight rule looks back further
 STALE_AFTER_MIN = 30          # readings older than this => data considered stale
 STUCK_STDDEV_EPS = 0.01       # near-zero variance over the window => stuck sensor
@@ -38,12 +39,43 @@ class RiskColor(str, Enum):
     red = "red"
 
 
+class Step(BaseModel):
+    title: str = Field(description="Short imperative action title the officer can scan quickly.")
+    sub: str = Field(description="One-line elaboration or rationale. Empty string if nothing to add.")
+
+
 class RiskScore(BaseModel):
     color: RiskColor = Field(description="Traffic-light risk level for this field.")
     score: int = Field(description="Risk score 0-100 (higher = more urgent). Validated/clamped in code.")
     reasoning: str = Field(description="Which concrete signals drove the score, in 1-3 sentences.")
     recommended_action: str = Field(description="The single next action for the field officer.")
     data_caveats: str = Field(description="Data-quality caveats (stale/missing/implausible/stuck sensors). Empty string if none.")
+    steps: list[Step] = Field(
+        description="2-5 concrete, prioritised steps the officer should take on this field, most important first."
+    )
+
+
+class CallLine(BaseModel):
+    t: int = Field(description="Whole second offset into the recording when this line starts (first line is 0).")
+    who: str = Field(description="Speaker, exactly 'Farmer' or 'WHH hotline'.")
+    text: str = Field(description="One short spoken line, first person, plain language.")
+
+
+class FarmerCall(BaseModel):
+    meta: str = Field(description="Header line, e.g. 'Farmer hotline - 15 Oct, 07:40 - 0:52 - translated'.")
+    summary: str = Field(description="2-3 sentence summary of what the farmer reports.")
+    duration: int = Field(description="Call length in seconds; a few seconds after the last line's t.")
+    lines: list[CallLine] = Field(description="Chronological transcript, 5-9 short lines, Farmer and WHH hotline alternating.")
+
+
+class AlertItem(BaseModel):
+    who: str = Field(description="Source of the alert, one of 'Sensor', 'System', 'Hotline'.")
+    at: str = Field(description="Human-readable timestamp, e.g. '15 Oct, 06:00'.")
+    text: str = Field(description="One short sentence describing the alert.")
+
+
+class AlertFeed(BaseModel):
+    alerts: list[AlertItem] = Field(description="0-5 alerts, oldest first. Empty list when nothing noteworthy happened.")
 
 
 def _mean(values: list[float]) -> float | None:
@@ -190,7 +222,9 @@ _SYSTEM_PROMPT = (
     "In that case raise caution, keep the score mid-range at least, and explain the data gap in data_caveats.\n"
     "- A favourable micro-climate indicates CONDITIONS for risk, not a confirmed infection; "
     "recommend an inspection, not a treatment.\n"
-    "- Keep reasoning and recommended_action short and concrete."
+    "- Keep reasoning and recommended_action short and concrete.\n"
+    "- In `steps`, give 2-5 prioritised actions for the officer (most important first). "
+    "When risk is low or data is missing, the steps are about inspection and data recovery, not treatment."
 )
 
 
@@ -236,3 +270,77 @@ def apply_blight_rule_floor(risk: RiskScore, features: dict) -> RiskScore:
             ),
         }
     )
+
+
+def _field_context(field: dict) -> str:
+    return (
+        f"  name: {field.get('name')}\n"
+        f"  crop: {field.get('crop')}\n"
+        f"  plantingDate: {field.get('plantingDate')}\n"
+        f"  knownCases: {field.get('knownCases')}\n"
+    )
+
+
+_ALERTS_SYSTEM_PROMPT = (
+    "You turn the computed signals for one agricultural field into a short feed of past alerts, "
+    "as if a monitoring system had posted them over the last few days. "
+    "Each alert is one factual sentence grounded ONLY in the provided signals and risk verdict "
+    "(e.g. a humidity/leaf-wetness threshold crossed, an officer visit scheduled, an SMS sent to the farmer). "
+    "Do not invent sensors or numbers that are not in the signals. "
+    "`who` is 'Sensor' for threshold events, 'System' for automated actions, 'Hotline' for farmer contact. "
+    "`at` is a short human timestamp. Oldest first. Return an empty list if the field looks calm."
+)
+
+
+def generate_alerts(field: dict, features: dict, risk: "RiskScore") -> list[dict]:
+    """Best-effort LLM alert feed for a field, grounded in the computed signals."""
+    deployment = os.environ["AZURE_OPENAI_DEPLOYMENT"]
+    user_content = (
+        f"FIELD CONTEXT:\n{_field_context(field)}\n"
+        f"RISK VERDICT: color={risk.color.value} score={risk.score} "
+        f"reasoning={risk.reasoning} caveats={risk.data_caveats}\n\n"
+        f"COMPUTED SIGNALS:\n{features}"
+    )
+    completion = _client().beta.chat.completions.parse(
+        model=deployment,
+        messages=[
+            {"role": "system", "content": _ALERTS_SYSTEM_PROMPT},
+            {"role": "user", "content": user_content},
+        ],
+        response_format=AlertFeed,
+    )
+    feed = completion.choices[0].message.parsed
+    return [a.model_dump() for a in feed.alerts]
+
+
+_CALL_SYSTEM_PROMPT = (
+    "You write a realistic, short transcript of a phone call between a smallholder farmer and the "
+    "Welthungerhilfe (WHH) farmer hotline, as if recorded shortly before the extension officer's visit. "
+    "The farmer describes, in plain first-person language, symptoms consistent with the field's crop, "
+    "known cases and risk verdict (what they SEE on the plants); the hotline asks brief clarifying questions "
+    "and ends by advising an officer visit. Ground the symptoms in the provided context and signals; "
+    "do not quote sensor numbers. 5-9 short lines, speakers alternating, Farmer first. "
+    "Timestamps `t` are increasing whole seconds; `duration` is a few seconds after the last line."
+)
+
+
+def generate_call(field: dict, features: dict, risk: "RiskScore") -> dict:
+    """Best-effort LLM-generated farmer-call transcript grounded in the field's conditions."""
+    deployment = os.environ["AZURE_OPENAI_DEPLOYMENT"]
+    user_content = (
+        f"FIELD CONTEXT:\n{_field_context(field)}\n"
+        f"RISK VERDICT: color={risk.color.value} score={risk.score} reasoning={risk.reasoning}\n\n"
+        f"COMPUTED SIGNALS:\n{features}"
+    )
+    completion = _client().beta.chat.completions.parse(
+        model=deployment,
+        messages=[
+            {"role": "system", "content": _CALL_SYSTEM_PROMPT},
+            {"role": "user", "content": user_content},
+        ],
+        response_format=FarmerCall,
+    )
+    call = completion.choices[0].message.parsed
+    out = call.model_dump()
+    out["audio"] = None  # real recording is uploaded out-of-band; UI animates a placeholder
+    return out
