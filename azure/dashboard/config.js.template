@@ -1,0 +1,10 @@
+// Copy this file to `config.js` (gitignored) and fill in your real values.
+// `config.js` holds the deployed API URL; only this .template is committed.
+window.FIELDGUARD_CONFIG = {
+  // From `terraform output api_base_url`, e.g. https://fieldguard-func-ab12cd.azurewebsites.net/api
+  apiBaseUrl: "https://<function-app-hostname>/api",
+  // Device whose time-series is charted on the detail panel.
+  chartDeviceId: "box-01",
+  // How many recent readings to chart.
+  chartLimit: 200
+};

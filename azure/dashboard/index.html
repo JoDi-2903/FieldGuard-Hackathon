@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FieldGuard — Visit Priorities</title>
+  <style>
+    :root {
+      --surface: #ffffff;
+      --surface-2: #f4f6f8;
+      --ink: #1b2733;
+      --ink-muted: #5b6b7b;
+      --border: #dce3ea;
+      --good: #2e7d32;
+      --warning: #b26a00;
+      --critical: #c62828;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --surface: #121820;
+        --surface-2: #1b232d;
+        --ink: #e8eef4;
+        --ink-muted: #9fb0c0;
+        --border: #2a3744;
+        --good: #66bb6a;
+        --warning: #ffb74d;
+        --critical: #ef5350;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: var(--surface-2); color: var(--ink); line-height: 1.5;
+    }
+    header {
+      padding: 20px 24px; background: var(--surface); border-bottom: 1px solid var(--border);
+      display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
+    }
+    header h1 { font-size: 18px; margin: 0; }
+    header p { margin: 0; color: var(--ink-muted); font-size: 13px; }
+    header button {
+      margin-left: auto; padding: 8px 14px; border: 1px solid var(--border);
+      border-radius: 8px; background: var(--surface-2); color: var(--ink); cursor: pointer; font-size: 13px;
+    }
+    header button:hover { background: var(--border); }
+    main { padding: 24px; display: grid; gap: 24px; grid-template-columns: minmax(320px, 1fr) minmax(320px, 1fr); }
+    @media (max-width: 760px) { main { grid-template-columns: 1fr; } }
+    h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-muted); margin: 0 0 12px; }
+    .card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+      padding: 14px 16px; margin-bottom: 12px; display: grid; gap: 6px;
+    }
+    .card .row { display: flex; align-items: center; gap: 10px; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 13px;
+      padding: 2px 10px; border-radius: 999px; border: 1px solid currentColor;
+    }
+    .badge.green { color: var(--good); }
+    .badge.yellow { color: var(--warning); }
+    .badge.red { color: var(--critical); }
+    .score { margin-left: auto; font-variant-numeric: tabular-nums; font-weight: 700; font-size: 18px; }
+    .field-name { font-weight: 600; }
+    .muted { color: var(--ink-muted); font-size: 13px; }
+    .caveat { color: var(--warning); font-size: 13px; }
+    .chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; }
+    .chart-card h3 { font-size: 13px; margin: 0 0 8px; color: var(--ink-muted); font-weight: 600; }
+    canvas { width: 100%; height: 160px; }
+    .error { color: var(--critical); padding: 12px 16px; }
+    .status { color: var(--ink-muted); font-size: 12px; }
+  </style>
+</head>
+<body data-palette="#2e7d32,#b26a00,#c62828">
+  <header>
+    <h1>FieldGuard</h1>
+    <p>Which field to inspect next — ranked by data-driven risk</p>
+    <button id="refresh">Refresh</button>
+  </header>
+  <main>
+    <section>
+      <h2>Visit priority list</h2>
+      <div id="risk-list"></div>
+      <p id="risk-status" class="status"></p>
+    </section>
+    <section>
+      <h2>Sensor history — <span id="device-label"></span></h2>
+      <div class="chart-card"><h3>Air temperature (°C)</h3><canvas id="chart-temp"></canvas></div>
+      <div class="chart-card"><h3>Air humidity (%)</h3><canvas id="chart-hum"></canvas></div>
+      <div class="chart-card"><h3>Soil moisture (%)</h3><canvas id="chart-soil"></canvas></div>
+      <p id="chart-status" class="status"></p>
+    </section>
+  </main>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
