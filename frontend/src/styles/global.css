@@ -1,0 +1,108 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--white);
+  color: var(--text);
+  font: 400 16px/24px var(--f-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-family: var(--f-head);
+  color: var(--head);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.wrap {
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+/* full-width working screens: slim side gutters instead of the 1140px container */
+.wrap--wide {
+  max-width: 1920px;
+  padding: 0 24px;
+}
+
+.topline {
+  font: 700 14px/16px var(--f-head);
+  letter-spacing: 0.5px;
+  color: var(--muted);
+}
+
+/* Buttons: always pills, label in condensed bold, trailing arrow. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 50px;
+  padding: 0 24px;
+  border: 0;
+  border-radius: var(--pill);
+  background: var(--green);
+  color: var(--white);
+  font: 600 19px/24px var(--f-head);
+  cursor: pointer;
+  transition: background var(--ease);
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--green-hover);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.btn:focus-visible,
+.text-link:focus-visible {
+  outline: 3px solid var(--green-tint);
+  outline-offset: 2px;
+}
+
+.btn.ghost {
+  background: var(--grey-btn);
+  color: var(--head);
+}
+
+.btn.ghost:hover:not(:disabled) {
+  background: var(--hair);
+}
+
+.text-link {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: 700 17px/20px var(--f-head);
+  color: var(--green);
+  cursor: pointer;
+}
+
+.text-link:hover {
+  color: var(--green-dark);
+}
+
+.arrow::after {
+  content: '→';
+}

@@ -1,0 +1,47 @@
+/*
+ * Welthungerhilfe design tokens — mirrored from welthungerhilfe/output/DESIGN.md.
+ * Rule of thumb: green = brand + every app action; red is reserved for donations
+ * on the WHH site, so the app does not use it for buttons. Errors use --error.
+ */
+:root {
+  /* brand green */
+  --green: #2fab16;
+  --green-hover: #74c763;
+  --green-dark: #237e10;
+  --green-darker: #0e692e;
+  --green-tint: #d6e4c8;
+
+  /* accents */
+  --red: #e6203e;
+  --sand: #f7edd2;
+  --error: #ff001f;
+
+  /* surfaces + text */
+  --white: #ffffff;
+  --grey-band: #f2f2f3;
+  --grey-btn: #f0f0f0;
+  --head: #404048;
+  --text: #474756;
+  --ink: #25252b;
+  --muted: #868689;
+  --outline: #aaaaac;
+  --hair: #dadadb;
+
+  /* topic colours (one per advisory theme) */
+  --t-blue: #5996e4;
+  --t-orange: #ff9e11;
+  --t-rose: #d36d85;
+  --t-yellow: #f8d832;
+  --t-magenta: #b02885;
+
+  /* type */
+  --f-head: 'Core Sans WHH HEAD NR Cn', 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  --f-text: 'Core Sans WHH Copy N', 'Nunito Sans', Verdana, sans-serif;
+
+  /* shape + depth: sharp containers, pill actions */
+  --pill: 26px;
+  --container: 1140px;
+  --sh-card: 0 3px 12px rgba(52, 52, 52, 0.2);
+  --sh-big: 0 4px 8px rgba(0, 0, 0, 0.05), 0 8px 35px rgba(0, 0, 0, 0.15);
+  --ease: 0.3s ease-in-out;
+}

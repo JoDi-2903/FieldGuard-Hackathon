@@ -1,0 +1,89 @@
+.app-header {
+  background: var(--white);
+  height: 96px;
+}
+
+.app-header.is-compact {
+  height: 68px;
+}
+
+.app-header.is-compact .app-header__avatar {
+  width: 40px;
+  height: 40px;
+}
+
+.app-header__inner {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.app-header__brand {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border: 0;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.app-header__divider {
+  width: 1px;
+  height: 40px;
+  background: var(--hair);
+}
+
+.app-header__app {
+  font: 700 24px/26px var(--f-head);
+  color: var(--head);
+}
+
+.app-header__user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.app-header__avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.app-header__name {
+  font: 700 20px/22px var(--f-head);
+  color: var(--head);
+}
+
+.app-header__role {
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--muted);
+}
+
+.app-header__out {
+  margin-left: 12px;
+  height: 44px;
+  padding: 0 20px;
+  font-size: 17px;
+}
+
+@media (max-width: 600px) {
+  .app-header {
+    height: 76px;
+  }
+
+  .app-header .logo {
+    height: 44px !important;
+  }
+
+  .app-header__app,
+  .app-header__divider,
+  .app-header__who {
+    display: none;
+  }
+}

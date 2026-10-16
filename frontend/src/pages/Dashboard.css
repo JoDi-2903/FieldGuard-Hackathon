@@ -1,0 +1,492 @@
+/* Desktop: the dashboard fills exactly one screen — no page scroll. */
+.dash {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--grey-band);
+  overflow: hidden;
+}
+
+/* compact intro band — panels below overlap its lower edge */
+.dash__band {
+  flex: none;
+  background: var(--green);
+  color: var(--white);
+  padding: 16px 0 40px;
+}
+
+.dash__band-inner {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px 40px;
+  flex-wrap: wrap;
+}
+
+.dash__topline {
+  color: var(--white);
+  font-size: 16px;
+  line-height: 20px;
+  margin-bottom: 4px;
+  opacity: 0.9;
+}
+
+.dash__title {
+  color: var(--white);
+  font: 700 32px/36px var(--f-head);
+}
+
+.dash__summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 32px;
+}
+
+.dash__stat {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.dash__stat-num {
+  font: 800 34px/34px var(--f-head);
+  padding-bottom: 4px;
+  border-bottom: 4px solid var(--white);
+  min-width: 22px;
+  text-align: center;
+}
+
+.dash__stat-num.is-danger {
+  border-bottom-color: #cf0033;
+}
+
+.dash__stat-text {
+  font: 700 15px/18px var(--f-head);
+  padding-bottom: 6px;
+  max-width: 120px;
+}
+
+.dash__stat--route {
+  padding-left: 32px;
+  border-left: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.dash__stat--route .dash__stat-text {
+  max-width: none;
+}
+
+/* grid: calendar left, map + list right */
+.dash__grid {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(300px, 26%) minmax(0, 1fr);
+  gap: 16px;
+  margin-top: -24px;
+  padding-bottom: 16px;
+}
+
+.dash__calendar {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.dash__right {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+}
+
+/* the list takes the height it needs (up to 62%); the map fills the rest */
+.dash__map {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.dash__list {
+  flex: none;
+  max-height: 60%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* panels — white, square, soft shadow */
+.panel {
+  background: var(--white);
+  box-shadow: var(--sh-big);
+  padding: 16px 20px 18px;
+}
+
+.panel__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin-bottom: 12px;
+}
+
+.panel__title {
+  font: 700 24px/28px var(--f-head);
+}
+
+.panel__hint {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 14px;
+  font-size: 13px;
+  color: var(--head);
+}
+
+.legend__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend__note {
+  color: var(--muted);
+}
+
+.legend__swatch {
+  width: 14px;
+  height: 14px;
+  border-left: 4px solid;
+}
+
+.legend__swatch.is-visit {
+  background: rgba(47, 171, 22, 0.18);
+  border-color: var(--green);
+}
+
+.legend__swatch.is-travel {
+  background: rgba(134, 134, 137, 0.16);
+  border-color: var(--outline);
+}
+
+.legend__dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+}
+
+.legend__dot.is-small {
+  width: 10px;
+  height: 10px;
+  background: var(--outline);
+}
+
+/* calendar — Outlook-style day view */
+.cal {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  margin: 8px 0 8px 44px;
+}
+
+.cal__line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 1px solid var(--hair);
+}
+
+.cal__line.is-half {
+  border-top-style: dashed;
+  border-top-color: #e8e8ea;
+}
+
+.cal__hour {
+  position: absolute;
+  left: -44px;
+  top: -9px;
+  font: 600 14px/16px var(--f-head);
+  color: var(--muted);
+}
+
+.cal__events {
+  position: absolute;
+  inset: 0 0 0 4px;
+}
+
+.cal__event {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 1px;
+  overflow: hidden;
+  padding: 4px 10px;
+  border: 0;
+  border-left: 4px solid;
+  text-align: left;
+  font: inherit;
+}
+
+/* 1px gap between back-to-back events, like Outlook */
+.cal__event::after {
+  content: '';
+  position: absolute;
+  left: -4px;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--white);
+}
+
+.cal__event.is-visit {
+  background: rgba(47, 171, 22, 0.18);
+  border-left-color: var(--green);
+  cursor: pointer;
+  transition: background var(--ease);
+}
+
+.cal__event.is-visit:hover {
+  background: rgba(47, 171, 22, 0.26);
+}
+
+.cal__event.is-visit.is-selected {
+  background: rgba(47, 171, 22, 0.32);
+  box-shadow: inset 0 0 0 1px var(--green-dark);
+}
+
+.cal__event.is-travel {
+  background: rgba(134, 134, 137, 0.14);
+  border-left-color: var(--outline);
+  justify-content: center;
+}
+
+.cal__event-title {
+  font: 700 16px/18px var(--f-head);
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cal__event.is-travel .cal__event-title {
+  font: 600 13px/16px var(--f-head);
+  color: var(--muted);
+}
+
+.cal__event-meta {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--head);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cal__now {
+  position: absolute;
+  left: -6px;
+  right: 0;
+  border-top: 2px solid var(--green-dark);
+}
+
+.cal__now::before {
+  content: '';
+  position: absolute;
+  left: -4px;
+  top: -6px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--green-dark);
+}
+
+/* map */
+.map__frame {
+  flex: 1;
+  min-height: 150px;
+  background: #f7edd2;
+}
+
+.map {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.map__marker {
+  cursor: pointer;
+}
+
+.map__num {
+  font: 800 17px var(--f-head);
+  fill: var(--white);
+}
+
+.map__label {
+  font: 700 14px var(--f-head);
+  fill: var(--head);
+}
+
+.map__tag {
+  font: 700 14px var(--f-head);
+  fill: var(--white);
+}
+
+/* visit list — one quiet line per farm, red text only for farms in danger */
+.visits {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.visit {
+  display: grid;
+  grid-template-columns: 28px minmax(220px, 1.2fr) minmax(0, 2fr) auto;
+  align-items: baseline;
+  gap: 16px;
+  padding: 14px 12px;
+  border-top: 1px solid var(--hair);
+  cursor: pointer;
+  transition: background var(--ease);
+}
+
+.visit:first-child {
+  border-top: 0;
+}
+
+.visit:hover {
+  background: #fafafa;
+}
+
+.visit.is-selected {
+  background: var(--grey-band);
+}
+
+.visit__num {
+  font: 700 18px var(--f-head);
+  color: var(--head);
+}
+
+.visit__who {
+  font-size: 15px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.visit__farm {
+  font: 700 19px var(--f-head);
+  color: var(--head);
+}
+
+.visit__finding {
+  font-size: 15px;
+  color: var(--text);
+}
+
+.visit.is-danger .visit__finding {
+  color: #cf0033;
+}
+
+.visit__profile {
+  white-space: nowrap;
+  font-size: 16px;
+}
+
+/* farm profile placeholder */
+.dash__back {
+  color: var(--white);
+  margin-bottom: 10px;
+}
+
+.dash__back:hover {
+  color: var(--green-tint);
+}
+
+/* below desktop: normal scrolling page */
+@media (max-width: 1099px), (max-height: 640px) {
+  .dash {
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+  }
+
+  .dash__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dash__calendar {
+    order: 2;
+  }
+
+  .cal {
+    flex: none;
+    height: 600px;
+  }
+
+  .dash__list {
+    max-height: none;
+  }
+
+  .map__frame {
+    flex: none;
+    height: 280px;
+  }
+
+  .dash__stat--route {
+    padding-left: 0;
+    border-left: 0;
+  }
+}
+
+@media (max-width: 600px) {
+  .wrap--wide {
+    padding: 0 12px;
+  }
+
+  .dash__title {
+    font-size: 26px;
+    line-height: 30px;
+  }
+
+  .dash__summary {
+    gap: 10px 20px;
+  }
+
+  .dash__stat-num {
+    font-size: 28px;
+    line-height: 28px;
+  }
+
+  .panel {
+    padding: 14px 12px;
+  }
+
+  .visit {
+    grid-template-columns: 24px minmax(0, 1fr);
+    gap: 4px 10px;
+  }
+
+  .visit__finding,
+  .visit__profile {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .map__frame {
+    height: 200px;
+  }
+}
