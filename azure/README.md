@@ -1,13 +1,18 @@
 # FieldGuard — Azure Backend
 
-Sensor data from Arduino boxes flows into Azure Table Storage, gets scored every 20 minutes (a deterministic blight-night rule plus an Azure OpenAI explanation), and is shown on a static dashboard ranked by risk. Each box fetches its own colour back for its LED traffic light. No Raspberry Pi in between.
+Sensor data from Arduino boxes flows into Azure Table Storage, gets scored every 20 minutes (a deterministic blight-night rule plus an Azure OpenAI explanation — risk, a step-by-step action plan, a per-field alert feed, and a simulated farmer-call transcript), and is shown on a React dashboard ranked by risk. The dashboard is a static single-page app hosted on Azure Static Web Apps, which proxies `/api` to the Function App as a linked backend (same origin, no CORS), and auto-refreshes by polling the API. Each box fetches its own colour back for its LED traffic light.
 
 ```
 Arduino → POST /api/ingest → Table Storage ─┐
-                                            ├─ scorer (timer + /api/score_now): blight-night rule + Azure OpenAI → riskscores table
-Dashboard (Static Web App) ← /api/risk ─────┤
-                            ← /api/readings │
-Arduino LEDs ← /api/light ──────────────────┘
+                                            ├─ scorer (timer + /api/score_now): blight-night rule + Azure OpenAI
+Dashboard (Static Web App, Standard)        │       → riskscores table (color, score, steps, alerts, call)
+  │  served static SPA (React/Vite)         │
+  └─ /api/* ─(linked backend proxy)─────────┴─→ Function App
+        GET /api/risk            ranked risk list (+ steps)
+        GET /api/farms/{id}      aggregated per-field detail (sensors, disease, alerts, call, steps)
+        GET /api/fields          configured fields
+        GET /api/readings        raw time-series
+Arduino LEDs ← GET /api/light ───────────────→ most-urgent colour per box
 ```
 
 ### How a field is scored
@@ -31,12 +36,13 @@ A field with `demoMode: true` uses 10-minute "nights" (3 wet minutes = 1 blight 
 | Path | What |
 |---|---|
 | `terraform/` | All Azure infrastructure (Terraform `azurerm ~> 4.0`) |
-| `functionapp/` | Python v2 Azure Functions: `ingest`, `readings`, `risk`, `light`, `score_now`, `score_timer`; `blight_rule.py`; tests in `tests/` |
+| `functionapp/` | Python v2 Azure Functions: `ingest`, `readings`, `risk`, `light`, `fields`, `farms/{id}`, `score_now`, `score_timer`; `blight_rule.py`; tests in `tests/` |
 | `scripts/replay_blight_nights.py` | Demo: posts a week with blight nights for `box-02`, rescores, prints the result |
-| `dashboard/` | Static HTML dashboard (ranked risk list + sensor charts) |
+| `../frontend/` | React 18 + Vite dashboard (`whh-field-guard`) — the deployed Static Web App content |
 
 Secrets live in gitignored files — only `*.template` siblings are committed:
-`terraform/terraform.tfvars`, `functionapp/local.settings.json`, `dashboard/config.js`.
+`terraform/terraform.tfvars`, `functionapp/local.settings.json`. The React app needs no
+secrets; `../frontend/.env.example` documents the optional local-dev variables.
 
 ---
 
@@ -44,8 +50,8 @@ Secrets live in gitignored files — only `*.template` siblings are committed:
 
 - [Azure CLI](https://learn.microsoft.com/cli/azure) — `az login` before running anything
 - [Terraform](https://developer.hashicorp.com/terraform/downloads) >= 1.6
-- [Node.js](https://nodejs.org/) >= 18 — used to run `func` and `swa` via `npx`
-- Python 3.12 — only needed for `seed_fields.py`
+- [Node.js](https://nodejs.org/) >= 18 — runs `func` and `swa` via `npx`, and builds the React dashboard
+- Python 3.12 — for `seed_fields.py` and `seed_telemetry.py`
 
 > **No global installs required.** The deploy steps below use `npx` so you don't need
 > `func` or `swa` pre-installed globally.
@@ -57,7 +63,8 @@ Secrets live in gitignored files — only `*.template` siblings are committed:
 ```bash
 az login
 
-# 1. Provision all Azure resources
+# 1. Provision all Azure resources (Standard Static Web App + linked-backend
+#    registration to the Function App are created here)
 cd terraform
 cp terraform.tfvars.template terraform.tfvars
 #    → fill in: subscription_id (required), resource_group_name, regions (optional)
@@ -70,6 +77,14 @@ az functionapp config appsettings set \
   -n "$(terraform output -raw function_app_name)" \
   --settings INGEST_SHARED_SECRET=<choose-any-strong-secret>
 
+# 2b. Linking a backend auto-enables App Service Auth (AuthV2) on the Function App.
+#     Ensure it still allows anonymous callers, so the direct Arduino ingest path and
+#     the public read endpoints keep working (Terraform ignores auth drift by design):
+az webapp auth update \
+  -g "$(terraform output -raw resource_group_name)" \
+  -n "$(terraform output -raw function_app_name)" \
+  --unauthenticated-client-action AllowAnonymous
+
 # 3. Seed the demo fields and deploy the function code
 cd ../functionapp
 export TELEMETRY_CONNECTION_STRING="$(cd ../terraform && terraform output -raw telemetry_connection_string)"
@@ -78,17 +93,31 @@ python seed_fields.py
 npx -y azure-functions-core-tools@4 azure functionapp publish \
   "$(cd ../terraform && terraform output -raw function_app_name)" --python
 
-# 4. Deploy the dashboard
-cd ../dashboard
-cp config.js.template config.js
-#    → set apiBaseUrl to the value of: terraform output -raw api_base_url
-npx -y @azure/static-web-apps-cli deploy . \
-  --deployment-token "$(cd ../terraform && terraform output -raw swa_deployment_token)" \
+# 4. Build and deploy the React dashboard (its dist/ becomes the SWA content).
+#    The linked /api only resolves once the SWA has an app deployed, so this must
+#    run before the dashboard can reach the backend.
+cd ../../frontend
+npm install
+npm run build
+npx -y @azure/static-web-apps-cli deploy ./dist \
+  --deployment-token "$(cd ../azure/terraform && terraform output -raw swa_deployment_token)" \
   --env production
+
+# 5. Seed demo telemetry through the live API and compute the first scores so the
+#    dashboard's live overlay has data to show immediately.
+cd ../azure/functionapp
+export API_BASE_URL="$(cd ../terraform && terraform output -raw api_base_url)"
+export INGEST_SHARED_SECRET=<the-same-secret-from-step-2>
+python seed_telemetry.py
 ```
 
 > **Cold-start:** The Function App on a Consumption plan can take a few seconds on the
 > first request after a fresh deploy. If you get a timeout, just retry.
+
+> **Local development:** run the Function App locally (`func start`, port 7071) and, in
+> `../frontend`, `npm run dev`. Vite proxies `/api` to the local host (override with
+> `VITE_API_PROXY` in `.env`, e.g. point it at the deployed Function App). Sign in with
+> the demo officer `felix` / `demo`.
 
 ---
 
@@ -203,12 +232,67 @@ curl "$BASE/risk"
     "reasoning":          "High humidity combined with rain event ...",
     "recommended_action": "Inspect for late blight, consider fungicide application",
     "data_caveats":       null,
+    "steps": [
+      { "title": "Inspect lower leaves", "sub": "Look for dark, water-soaked lesions" },
+      { "title": "Advise preventive spraying", "sub": "" }
+    ],
     "scoredAt":           "2026-10-16T12:20:00+00:00"
   }
 ]
 ```
 
-`color` is `"green"`, `"yellow"`, or `"red"`. `score` is 0–100 (100 = highest risk).
+`color` is `"green"`, `"yellow"`, or `"red"`. `score` is 0–100 (100 = highest risk). `steps` is the AI-generated action plan (most important first).
+
+### GET `/api/fields` — configured fields
+
+Lists the fields in the `fields` table (used by the dashboard to map farms to fields).
+
+```bash
+curl "$BASE/fields"
+```
+
+```json
+[
+  { "fieldId": "field-b", "name": "Field B - River plot", "crop": "potato",
+    "plantingDate": "2026-09-20", "deviceId": "box-02",
+    "knownCases": "late blight confirmed on neighbouring farm" }
+]
+```
+
+### GET `/api/farms/{fieldId}` — aggregated per-field detail
+
+Returns everything the dashboard's farm profile renders, assembled from the readings
+window and the latest cached risk row (sensors with 7-day sparkline history + status,
+disease headline, AI alert feed, farmer-call transcript, and the step plan). Fields
+without a device return `"sensors": null` and a `sensorNote`.
+
+```bash
+curl "$BASE/farms/field-b"
+```
+
+```json
+{
+  "fieldId": "field-b",
+  "crop": "potato",
+  "stage": "Planted 20 Sep · 3 weeks · potato",
+  "sensorsUpdated": "4 min ago",
+  "sensors": {
+    "humidity":    { "value": 95.5, "status": "alert", "note": "Above 90 % — leaf-wetness risk", "history": [82,84,88,90,93,95,95] },
+    "temperature": { "value": 20.0, "status": "warn",  "note": "18–22 °C favours blight", "history": [20,20,20,20,20,20,20] },
+    "leafWetness": { "value": 10.1, "status": "alert", "note": "Above 10 h/day", "history": [3,3,3,8,12,12,10] },
+    "soilMoisture":{ "value": 41.0, "status": "ok",    "note": "In range", "history": [41,41,41,41,41,41,41] }
+  },
+  "disease": "late blight",
+  "risk": { "color": "red", "score": 85, "reasoning": "...", "recommended_action": "...", "data_caveats": "" },
+  "alerts": [ { "who": "Sensor", "at": "15 Oct, 06:00", "text": "Leaf wetness above 10 h — day 2." } ],
+  "call":   { "meta": "Farmer hotline · ...", "summary": "...", "audio": null, "duration": 52, "lines": [ { "t": 0, "who": "Farmer", "text": "..." } ] },
+  "steps":  [ { "title": "Inspect lower leaves", "sub": "..." } ]
+}
+```
+
+The four sensor tiles map to the backend as: `humidity`←`humidity_pct`, `temperature`←`temperature_c`,
+`soilMoisture`←`soil_pct`, and `leafWetness` is a **proxy** (hours/day with humidity ≥ 90 % or rain —
+there is no physical leaf-wetness sensor). `status` is `"ok" | "warn" | "alert"`.
 
 `deviceId` and `blight_nights` (count in the last 7 nights, from the rule) are included per field.
 
@@ -258,6 +342,9 @@ python -m pytest tests
 - **Key-based auth (no managed identity)**: assigning data-plane RBAC roles requires `Microsoft.Authorization/roleAssignments/write`, which hackathon accounts usually lack. Storage and OpenAI are therefore accessed via account keys stored in gitignored tfstate and app settings — never in the repo.
 - **Python 3.12**: the Linux Consumption plan supports up to Python 3.12. The remote build on Azure always uses 3.12 regardless of your local Python version.
 - **Azure OpenAI region**: the chosen model must be available and within TPM quota in `openai_location` (`swedencentral` by default).
-- **SWA Free regions**: Static Web Apps Free tier is only available in `westus2`, `eastus2`, `centralus`, `eastasia`. `swa_location` defaults to `westus2`.
+- **Static Web App (Standard) + linked backend**: the SWA is Standard because linking an existing ("bring your own") Function App as the `/api` backend is not available on the Free tier. `swa_location` defaults to `westus2`.
 - **Cognitive account soft-delete**: after `terraform destroy`, reusing the same account name in the same region can fail for ~48 h. Use `az cognitiveservices account purge ...` or change the project name to generate a new suffix.
-- **CORS**: the dashboard calls the Function App API cross-origin. The SWA hostname is allow-listed in Terraform — no manual CORS config needed.
+- **Routing (same-origin `/api`)**: the dashboard calls `/api` same-origin through the SWA linked-backend proxy — no CORS needed. The Function App's own CORS allow-list still covers direct device ingest and local development.
+- **AuthV2 anonymous access**: linking the backend auto-enables App Service Authentication on the Function App. Terraform ignores `auth_settings_v2` drift so it won't fight the linkage; keep `--unauthenticated-client-action AllowAnonymous` (deploy step 2b) so direct device ingest and the public read endpoints keep working.
+- **Real-time**: the dashboard polls `/api/risk` and `/api/farms/{id}` every ~20 s for the latest readings and scores. Server push (WebSocket/SignalR) is not used — and isn't supported through the SWA `/api` proxy — so a static SPA needs no container hosting.
+- **Demo telemetry**: readings exist only once a device posts to `/api/ingest`. `seed_telemetry.py` generates a few days of realistic readings (a healthy `box-01` and a blight-favourable `box-02`) so the dashboard's live overlay has data without the physical Arduino.
