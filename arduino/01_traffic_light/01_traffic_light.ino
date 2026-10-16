@@ -1,5 +1,5 @@
 // Step 1: cycles the traffic light module green -> yellow -> red.
-// Wiring: R -> D9, Y -> D10, G -> D11, GND -> GND.
+// Wiring: red, yellow, green LED long legs -> D9, D10, D11; each short leg -> 1 kOhm resistor -> GND.
 
 const uint8_t PIN_LED_RED = 9;
 const uint8_t PIN_LED_YELLOW = 10;
