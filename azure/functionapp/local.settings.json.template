@@ -1,0 +1,22 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "python",
+
+    "TELEMETRY_CONNECTION_STRING": "<storage-connection-string>",
+    "TELEMETRY_TABLE_NAME": "telemetry",
+    "FIELDS_TABLE_NAME": "fields",
+    "RISK_TABLE_NAME": "riskscores",
+
+    "AZURE_OPENAI_ENDPOINT": "https://<your-openai-resource>.openai.azure.com/",
+    "AZURE_OPENAI_API_KEY": "<your-openai-key>",
+    "AZURE_OPENAI_DEPLOYMENT": "gpt-5-mini",
+    "AZURE_OPENAI_API_VERSION": "2024-10-21",
+
+    "INGEST_SHARED_SECRET": "<choose-a-dev-secret>"
+  },
+  "Host": {
+    "CORS": "*"
+  }
+}

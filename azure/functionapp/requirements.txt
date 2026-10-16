@@ -1,0 +1,11 @@
+# Azure Functions Python v2 worker
+azure-functions
+
+# Table Storage data-plane SDK (connection-string auth)
+azure-data-tables
+
+# Azure OpenAI chat completions (structured outputs)
+openai
+
+# Structured-output model validation
+pydantic
