@@ -5,7 +5,10 @@
       "label": "Upload sketch to Arduino",
       "type": "shell",
       "command": "./scripts/upload.sh ${input:sketch}",
-      "group": { "kind": "build", "isDefault": true },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
       "problemMatcher": []
     },
     {
@@ -27,6 +30,7 @@
         "03_leaf_wetness",
         "04_bmp180",
         "05_soil_moisture",
+        "calibrate_analog",
         "sensor_node"
       ],
       "default": "00_blink"
