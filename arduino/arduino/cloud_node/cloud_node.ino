@@ -41,6 +41,7 @@ const uint8_t TIME_SYNC_ATTEMPTS = 10;
 const unsigned long MIN_VALID_EPOCH = 1767225600UL;  // 2026-01-01; anything earlier is not real NTP time
 const unsigned int SENSOR_WARMUP_MS = 200;
 const uint8_t SAMPLES_PER_READING = 5;
+const unsigned int DHT_STARTUP_MS = 2000;  // DHT11 needs ~1-2 s after power-up
 
 // --- Offline backlog: unsent readings, oldest dropped when full --------------
 const uint8_t MAX_BACKLOG = 36;  // 3 minutes at one reading every 5 s
@@ -74,7 +75,7 @@ unsigned long lastRtcSyncMs = 0;
 void setup() {
   Serial.begin(9600);
   configureSensorPins();
-  dht.begin();
+  startDhtAndDiscardFirstReading();
   checkWifiModuleAndFirmware();
   connectToWifiAndWait();
   syncRtcFromNetworkTimeAndWait();
@@ -106,6 +107,14 @@ void configureSensorPins() {
   pinMode(PIN_SOIL_POWER, OUTPUT);
   digitalWrite(PIN_RAIN_POWER, LOW);
   digitalWrite(PIN_SOIL_POWER, LOW);
+}
+
+// The first DHT11 read after power-up returns garbage (seen: 0.9 °C, 0 %), so it is thrown away.
+void startDhtAndDiscardFirstReading() {
+  dht.begin();
+  delay(DHT_STARTUP_MS);
+  dht.readTemperature();
+  dht.readHumidity();
 }
 
 void checkWifiModuleAndFirmware() {
@@ -334,8 +343,7 @@ int readStatusCodeAndLogResponse() {
   String statusLine = client.readStringUntil('\n');  // e.g. "HTTP/1.1 200 OK"
   int status = statusLine.length() > 12 ? statusLine.substring(9, 12).toInt() : 0;
   skipResponseHeaders();
-  String body = readResponseBody();
-  body.trim();
+  String body = extractJsonFromChunkedBody(readResponseBody());
   Serial.print(F("HTTP "));
   Serial.print(status);
   Serial.print(' ');
@@ -362,6 +370,18 @@ String readResponseBody() {
     }
   }
   return body;
+}
+
+// Azure answers with chunked encoding ("e\r\n{...}\r\n0"); keep only the JSON for the log.
+String extractJsonFromChunkedBody(const String &body) {
+  int start = body.indexOf('{');
+  int end = body.lastIndexOf('}');
+  if (start < 0 || end < start) {
+    String trimmed = body;
+    trimmed.trim();
+    return trimmed;
+  }
+  return body.substring(start, end + 1);
 }
 
 // --------------------------------------------------------------------------- //
