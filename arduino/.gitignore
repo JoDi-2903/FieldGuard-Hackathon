@@ -4,3 +4,4 @@ __pycache__/
 *.db
 .env
 .venv/
+arduino_secrets.h

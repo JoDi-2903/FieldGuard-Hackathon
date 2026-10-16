@@ -31,7 +31,8 @@
         "04_bmp180",
         "05_soil_moisture",
         "calibrate_analog",
-        "sensor_node"
+        "sensor_node",
+        "cloud_node"
       ],
       "default": "00_blink"
     }
