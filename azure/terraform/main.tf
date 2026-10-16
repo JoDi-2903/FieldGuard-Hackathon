@@ -128,9 +128,9 @@ resource "azurerm_linux_function_app" "this" {
 
   # Linking this app as the Static Web App's /api backend auto-enables App Service
   # Authentication (AuthV2) and rewrites auth_settings_v2 on the resource. Ignore
-  # those changes so Terraform does not fight the linkage on every apply. Keep the
-  # app reachable anonymously (direct device ingest + public reads) — see
-  # azure/README.md for the one-time `az webapp auth update` check after linking.
+  # those changes so Terraform does not fight the linkage on every apply. The app
+  # is kept reachable anonymously (direct device ingest + public reads) by
+  # terraform_data.allow_anonymous_auth below, which runs after the linkage.
   lifecycle {
     ignore_changes = [auth_settings_v2]
   }
@@ -185,4 +185,26 @@ resource "azurerm_static_web_app" "this" {
 resource "azurerm_static_web_app_function_app_registration" "this" {
   static_web_app_id = azurerm_static_web_app.this.id
   function_app_id   = azurerm_linux_function_app.this.id
+}
+
+# Linking the backend auto-enables AuthV2 but leaves unauthenticatedClientAction on a
+# default that can block the direct, tokenless Arduino ingest. Pin it to AllowAnonymous
+# so device ingest and the public read endpoints keep working. Imperative on purpose:
+# the azurerm auth_settings_v2 block is ignored (see function app lifecycle) to avoid
+# fighting the linkage, so we patch just this one field via the CLI after each (re)link.
+# Requires `az login` during apply (already a documented prerequisite).
+resource "terraform_data" "allow_anonymous_auth" {
+  triggers_replace = [
+    azurerm_static_web_app_function_app_registration.this.id,
+    azurerm_linux_function_app.this.id,
+  ]
+
+  provisioner "local-exec" {
+    command = <<-CMD
+      az webapp auth update \
+        -g "${data.azurerm_resource_group.this.name}" \
+        -n "${azurerm_linux_function_app.this.name}" \
+        --unauthenticated-client-action AllowAnonymous
+    CMD
+  }
 }

@@ -78,12 +78,13 @@ az functionapp config appsettings set \
   --settings INGEST_SHARED_SECRET=<choose-any-strong-secret>
 
 # 2b. Linking a backend auto-enables App Service Auth (AuthV2) on the Function App.
-#     Ensure it still allows anonymous callers, so the direct Arduino ingest path and
-#     the public read endpoints keep working (Terraform ignores auth drift by design):
-az webapp auth update \
+#     Terraform already pins it to allow anonymous callers (terraform_data
+#     .allow_anonymous_auth in step 1), so the direct Arduino ingest path and the
+#     public read endpoints keep working. To verify it took effect:
+az webapp auth show \
   -g "$(terraform output -raw resource_group_name)" \
   -n "$(terraform output -raw function_app_name)" \
-  --unauthenticated-client-action AllowAnonymous
+  --query "globalValidation.unauthenticatedClientAction"   # expect: "AllowAnonymous"
 
 # 3. Seed the demo fields and deploy the function code
 cd ../functionapp
@@ -345,6 +346,6 @@ python -m pytest tests
 - **Static Web App (Standard) + linked backend**: the SWA is Standard because linking an existing ("bring your own") Function App as the `/api` backend is not available on the Free tier. `swa_location` defaults to `westus2`.
 - **Cognitive account soft-delete**: after `terraform destroy`, reusing the same account name in the same region can fail for ~48 h. Use `az cognitiveservices account purge ...` or change the project name to generate a new suffix.
 - **Routing (same-origin `/api`)**: the dashboard calls `/api` same-origin through the SWA linked-backend proxy — no CORS needed. The Function App's own CORS allow-list still covers direct device ingest and local development.
-- **AuthV2 anonymous access**: linking the backend auto-enables App Service Authentication on the Function App. Terraform ignores `auth_settings_v2` drift so it won't fight the linkage; keep `--unauthenticated-client-action AllowAnonymous` (deploy step 2b) so direct device ingest and the public read endpoints keep working.
+- **AuthV2 anonymous access**: linking the backend auto-enables App Service Authentication on the Function App. Terraform ignores `auth_settings_v2` drift so it won't fight the linkage, and pins `unauthenticatedClientAction` to `AllowAnonymous` via `terraform_data.allow_anonymous_auth` (runs after the linkage, on every apply where the linkage changes) so direct device ingest and the public read endpoints keep working — no manual step needed.
 - **Real-time**: the dashboard polls `/api/risk` and `/api/farms/{id}` every ~20 s for the latest readings and scores. Server push (WebSocket/SignalR) is not used — and isn't supported through the SWA `/api` proxy — so a static SPA needs no container hosting.
 - **Demo telemetry**: readings exist only once a device posts to `/api/ingest`. `seed_telemetry.py` generates a few days of realistic readings (a healthy `box-01` and a blight-favourable `box-02`) so the dashboard's live overlay has data without the physical Arduino.
