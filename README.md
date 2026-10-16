@@ -36,3 +36,14 @@ Step-by-step build instructions: `Sensor Node Build Guide` in the vault (`04 Bui
 - **See output:** `Cmd+Shift+P` → "Tasks: Run Task" → **Open serial monitor**. Stop it with `Ctrl+C` before the next upload.
 
 Or in a terminal: `./scripts/upload.sh 02_dht11`, then `./scripts/monitor.sh`.
+
+## Progress
+
+- [x] Step 0: toolchain works, `00_blink` runs on the board
+- [x] Step 1: traffic light from 3 LEDs + 1 kΩ resistors (pins 9, 10, 11)
+- [ ] Step 2: DHT11 temperature + humidity
+- [ ] Step 3: rain plate as leaf wetness sensor + calibration
+- [ ] Step 4: BMP180 temperature (if available)
+- [ ] Step 5: soil moisture
+- [ ] Step 6: full `sensor_node` sketch, JSON lines
+- [ ] Step 7: Raspberry Pi receives data
