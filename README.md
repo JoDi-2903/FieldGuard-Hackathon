@@ -46,5 +46,5 @@ Or in a terminal: `./scripts/upload.sh 02_dht11`, then `./scripts/monitor.sh`.
 - [x] Step 3: rain plate as leaf wetness sensor (dry 999–1002, fridge dew 340–490, threshold 900)
 - [ ] Step 4: BMP180 temperature (if available)
 - [x] Step 5: soil moisture (dry soil 970–1000, wet about 650–690)
-- [ ] Step 6: full `sensor_node` sketch, JSON lines
+- [x] Step 6: full `sensor_node` sketch sends JSON lines; the Pi/computer can set the light (BMP180 not connected yet)
 - [ ] Step 7: Raspberry Pi receives data
