@@ -36,18 +36,18 @@ resource "azurerm_storage_account" "this" {
 }
 
 resource "azurerm_storage_table" "telemetry" {
-  name                 = "telemetry"
-  storage_account_id   = azurerm_storage_account.this.id
+  name               = "telemetry"
+  storage_account_id = azurerm_storage_account.this.id
 }
 
 resource "azurerm_storage_table" "fields" {
-  name                 = "fields"
-  storage_account_id   = azurerm_storage_account.this.id
+  name               = "fields"
+  storage_account_id = azurerm_storage_account.this.id
 }
 
 resource "azurerm_storage_table" "riskscores" {
-  name                 = "riskscores"
-  storage_account_id   = azurerm_storage_account.this.id
+  name               = "riskscores"
+  storage_account_id = azurerm_storage_account.this.id
 }
 
 # --- Observability ---
@@ -125,6 +125,15 @@ resource "azurerm_linux_function_app" "this" {
   )
 
   tags = var.tags
+
+  # Linking this app as the Static Web App's /api backend auto-enables App Service
+  # Authentication (AuthV2) and rewrites auth_settings_v2 on the resource. Ignore
+  # those changes so Terraform does not fight the linkage on every apply. Keep the
+  # app reachable anonymously (direct device ingest + public reads) — see
+  # azure/README.md for the one-time `az webapp auth update` check after linking.
+  lifecycle {
+    ignore_changes = [auth_settings_v2]
+  }
 }
 
 # --- Azure OpenAI ---
@@ -158,12 +167,22 @@ resource "azurerm_cognitive_deployment" "chat" {
   }
 }
 
-# --- Dashboard hosting: Static Web App (Free) ---
+# --- Dashboard hosting: Static Web App (Standard) ---
+# Standard is required to link an existing ("bring your own") Function App as the
+# site's /api backend; the Free tier only supports managed functions.
 resource "azurerm_static_web_app" "this" {
   name                = local.static_web_app_name
   resource_group_name = data.azurerm_resource_group.this.name
   location            = var.swa_location
-  sku_tier            = "Free"
-  sku_size            = "Free"
+  sku_tier            = "Standard"
+  sku_size            = "Standard"
   tags                = var.tags
+}
+
+# Link the Function App as the Static Web App's same-origin /api backend. The
+# React dashboard then calls /api/* without CORS. Only one backend may be linked
+# per SWA, and the SWA must have content deployed before /api resolves.
+resource "azurerm_static_web_app_function_app_registration" "this" {
+  static_web_app_id = azurerm_static_web_app.this.id
+  function_app_id   = azurerm_linux_function_app.this.id
 }

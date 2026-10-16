@@ -40,7 +40,7 @@ output "openai_deployment_name" {
 }
 
 output "swa_hostname" {
-  description = "Static Web App default hostname (the dashboard origin, already allow-listed in Function App CORS)."
+  description = "Static Web App default hostname. Serves the dashboard and proxies /api to the linked Function App."
   value       = azurerm_static_web_app.this.default_host_name
 }
 
