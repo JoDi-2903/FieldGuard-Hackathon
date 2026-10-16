@@ -52,6 +52,8 @@ function renderRiskList(items) {
     topRow.appendChild(el("span", { class: "score", text: item.score != null ? item.score : "–" }));
     card.appendChild(topRow);
 
+    if (item.blight_nights != null)
+      card.appendChild(el("div", { text: `Blight nights (last 7): ${item.blight_nights}` }));
     if (item.reasoning) card.appendChild(el("div", { class: "muted", text: item.reasoning }));
     if (item.recommended_action)
       card.appendChild(el("div", { text: `→ ${item.recommended_action}` }));

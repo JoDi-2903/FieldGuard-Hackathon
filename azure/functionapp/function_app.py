@@ -4,6 +4,7 @@ Endpoints:
   POST /api/ingest     - Arduino pushes a batch of sensor readings (X-Ingest-Key).
   GET  /api/readings   - time-series for the dashboard charts.
   GET  /api/risk       - latest risk score per field, ranked (the visit list).
+  GET  /api/light      - plain-text colour for one box's traffic light (red/yellow/green/unknown).
   POST /api/score_now  - recompute all risk scores on demand (X-Ingest-Key).
   (timer) score_timer  - recompute all risk scores every ~20 min.
 
@@ -36,8 +37,8 @@ app = func.FunctionApp()
 
 logger = logging.getLogger("fieldguard")
 
-# How much history the scorer looks at per field.
-SCORING_WINDOW_HOURS = 48
+# Only the columns the scorer uses, so a week of 5-second readings stays a small download.
+SCORING_COLUMNS = ["deviceTimestamp", "temperature_c", "humidity_pct", "rain", "soil_pct", "quality"]
 
 
 # --------------------------------------------------------------------------- #
@@ -73,14 +74,24 @@ def _entity_to_reading(entity: dict) -> dict:
     }
 
 
-def _read_window(device_id: str, hours: int) -> list[dict]:
-    """Return a device's readings for the last `hours`, newest-first, as raw entities."""
-    now = utcnow()
-    start = now - dt.timedelta(hours=hours)
+def _read_since(device_id: str, start: dt.datetime, now: dt.datetime) -> list[dict]:
+    """Return a device's readings between `start` and `now`, newest-first, as raw entities."""
     # Inverted RowKey => newer time is a smaller key, so bounds flip.
     flt = "PartitionKey eq @pk and RowKey ge @lo and RowKey le @hi"
     params = {"pk": device_id, "lo": inverted_rowkey(now), "hi": inverted_rowkey(start)}
-    return list(telemetry_table().query_entities(flt, parameters=params))
+    return list(telemetry_table().query_entities(flt, parameters=params, select=SCORING_COLUMNS))
+
+
+def _latest_risk_entity(field_id: str) -> dict | None:
+    return next(
+        iter(risk_table().query_entities("PartitionKey eq @pk", parameters={"pk": field_id})),
+        None,
+    )
+
+
+def _blight_nights_from(risk_entity: dict) -> int | None:
+    features = json.loads(risk_entity.get("features_json") or "{}")
+    return (features.get("blight_rule") or {}).get("blight_nights")
 
 
 def _score_all_fields() -> list[dict]:
@@ -90,10 +101,13 @@ def _score_all_fields() -> list[dict]:
     for field in fields_table().query_entities("PartitionKey eq 'field'"):
         field_id = field["RowKey"]
         device_id = field.get("deviceId")
-        readings = _read_window(device_id, SCORING_WINDOW_HOURS) if device_id else []
-        features = scoring.compute_features(readings, now=now)
+        rule_settings = scoring.select_blight_rule_settings(field)
+        start = scoring.oldest_reading_needed(now, rule_settings)
+        readings = _read_since(device_id, start, now) if device_id else []
+        features = scoring.compute_features(readings, now=now, rule_settings=rule_settings)
 
         risk = scoring.score_field(field, features)
+        risk = scoring.apply_blight_rule_floor(risk, features)
         entity = {
             "PartitionKey": field_id,
             "RowKey": inverted_rowkey(now),
@@ -186,10 +200,7 @@ def risk(req: func.HttpRequest) -> func.HttpResponse:
     out = []
     for field in fields_table().query_entities("PartitionKey eq 'field'"):
         field_id = field["RowKey"]
-        latest = next(
-            iter(risk_table().query_entities("PartitionKey eq @pk", parameters={"pk": field_id})),
-            None,
-        )
+        latest = _latest_risk_entity(field_id)
         if latest is None:
             continue
         out.append(
@@ -197,6 +208,8 @@ def risk(req: func.HttpRequest) -> func.HttpResponse:
                 "fieldId": field_id,
                 "fieldName": field.get("name"),
                 "crop": field.get("crop"),
+                "deviceId": field.get("deviceId"),
+                "blight_nights": _blight_nights_from(latest),
                 "color": latest.get("color"),
                 "score": latest.get("score"),
                 "reasoning": latest.get("reasoning"),
@@ -207,6 +220,26 @@ def risk(req: func.HttpRequest) -> func.HttpResponse:
         )
     out.sort(key=lambda r: (r.get("score") or 0), reverse=True)
     return _json(out)
+
+
+@app.route(route="light", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)
+def light(req: func.HttpRequest) -> func.HttpResponse:
+    """Colour for one box's LED traffic light, as one plain word so the Arduino needs no JSON parser.
+
+    If a box serves several fields, the most urgent colour wins. No score yet => "unknown".
+    """
+    device_id = req.params.get("deviceId")
+    if not device_id:
+        return func.HttpResponse("deviceId query parameter is required", status_code=400)
+
+    colors = []
+    flt = "PartitionKey eq 'field' and deviceId eq @device"
+    for field in fields_table().query_entities(flt, parameters={"device": device_id}):
+        latest = _latest_risk_entity(field["RowKey"])
+        if latest is not None and latest.get("color") in scoring.COLOR_RANK:
+            colors.append(latest["color"])
+    color = max(colors, key=scoring.COLOR_RANK.get) if colors else "unknown"
+    return func.HttpResponse(color, mimetype="text/plain")
 
 
 @app.route(route="score_now", methods=["POST"], auth_level=func.AuthLevel.ANONYMOUS)

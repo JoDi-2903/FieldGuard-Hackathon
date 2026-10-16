@@ -1,13 +1,22 @@
 # FieldGuard — Azure Backend
 
-Sensor data from Arduino boxes flows into Azure Table Storage, gets scored by an Azure OpenAI model every 20 minutes, and is shown on a static dashboard ranked by risk.
+Sensor data from Arduino boxes flows into Azure Table Storage, gets scored every 20 minutes (a deterministic blight-night rule plus an Azure OpenAI explanation), and is shown on a static dashboard ranked by risk. Each box fetches its own colour back for its LED traffic light. No Raspberry Pi in between.
 
 ```
 Arduino → POST /api/ingest → Table Storage ─┐
-                                            ├─ scorer (timer + /api/score_now) → Azure OpenAI → riskscores table
-Dashboard (Static Web App) ← /api/risk ─────┘
-                            ← /api/readings
+                                            ├─ scorer (timer + /api/score_now): blight-night rule + Azure OpenAI → riskscores table
+Dashboard (Static Web App) ← /api/risk ─────┤
+                            ← /api/readings │
+Arduino LEDs ← /api/light ──────────────────┘
 ```
+
+### How a field is scored
+
+1. `blight_rule.py` counts **blight nights**: noon-to-noon windows (Kasungu time) with ≥ 6 h of leaf-plate wetness (`rain = 1`) at a mean 18–27 °C while wet. Wet time comes from the reading timestamps, so any cadence works (5 s demo, 15 min field). Last 7 nights: 0–1 green, 2–3 yellow, 4+ red.
+2. `scoring.py` adds descriptive signals for the last 48 h (stats, humidity hours, staleness, stuck sensors) and asks the LLM for a score and explanation.
+3. The rule's colour is a **floor**: it can raise the LLM's colour (score at least 40 for yellow, 70 for red), never lower it.
+
+A field with `demoMode: true` uses 10-minute "nights" (3 wet minutes = 1 blight night, 1 → yellow, 2 → red), so spraying the plate shows up live.
 
 ## Live deployment
 
@@ -22,7 +31,8 @@ Dashboard (Static Web App) ← /api/risk ─────┘
 | Path | What |
 |---|---|
 | `terraform/` | All Azure infrastructure (Terraform `azurerm ~> 4.0`) |
-| `functionapp/` | Python v2 Azure Functions: `ingest`, `readings`, `risk`, `score_now`, `score_timer` |
+| `functionapp/` | Python v2 Azure Functions: `ingest`, `readings`, `risk`, `light`, `score_now`, `score_timer`; `blight_rule.py`; tests in `tests/` |
+| `scripts/replay_blight_nights.py` | Demo: posts a week with blight nights for `box-02`, rescores, prints the result |
 | `dashboard/` | Static HTML dashboard (ranked risk list + sensor charts) |
 
 Secrets live in gitignored files — only `*.template` siblings are committed:
@@ -200,6 +210,17 @@ curl "$BASE/risk"
 
 `color` is `"green"`, `"yellow"`, or `"red"`. `score` is 0–100 (100 = highest risk).
 
+`deviceId` and `blight_nights` (count in the last 7 nights, from the rule) are included per field.
+
+### GET `/api/light` — colour for one box's LED traffic light
+
+Plain text, one word: `red`, `yellow`, `green`, or `unknown` (no score yet). If a box serves several fields, the most urgent colour wins. The `cloud_node` sketch polls this every 30 s.
+
+```bash
+curl "$BASE/light?deviceId=box-01"
+# → yellow
+```
+
 ### POST `/api/score_now` — trigger scoring immediately
 
 Write-protected (`X-Ingest-Key` required). Runs the AI scorer for all fields right now instead of waiting for the 20-minute timer.
@@ -207,6 +228,26 @@ Write-protected (`X-Ingest-Key` required). Runs the AI scorer for all fields rig
 ```bash
 curl -X POST "$BASE/score_now" -H "X-Ingest-Key: $SECRET"
 # → {"scored": [{"fieldId": "field-a", "color": "green", "score": 12}, ...]}
+```
+
+---
+
+## Demo: replay blight nights
+
+```bash
+python3 azure/scripts/replay_blight_nights.py              # box-02 (field-b): 4 blight nights => red
+python3 azure/scripts/replay_blight_nights.py --nights 2   # => yellow
+python3 azure/scripts/replay_blight_nights.py --dry-run    # print only
+```
+
+Posts 15-minute readings (wet 20:00–04:00 at 22 °C) for the last N nights, calls `/api/score_now`, then prints `/api/risk` and `/api/light`. Key from `$INGEST_KEY` or `arduino_secrets.h`.
+
+## Tests
+
+```bash
+cd azure/functionapp
+pip install -r requirements.txt pytest
+python -m pytest tests
 ```
 
 ---
