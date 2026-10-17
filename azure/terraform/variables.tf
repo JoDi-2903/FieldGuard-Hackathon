@@ -77,3 +77,23 @@ variable "tags" {
     env     = "hackathon"
   }
 }
+
+# --- Automatic application deployment (see deploy.tf) ---------------------- #
+
+variable "deploy_app" {
+  description = "When true, `terraform apply` also publishes the Function App code, builds and uploads the React dashboard to the Static Web App, and seeds the demo fields. Set false to provision infrastructure only and deploy the app manually (see azure/README.md)."
+  type        = bool
+  default     = true
+}
+
+variable "seed_demo_data" {
+  description = "When true (and deploy_app is true), stream demo telemetry through /api/ingest and compute the first risk scores so the dashboard shows data immediately. Devices listed in live_devices are excluded so real hardware is never overwritten."
+  type        = bool
+  default     = true
+}
+
+variable "live_devices" {
+  description = "Device ids backed by real hardware (e.g. the live box-01 Arduino). These are NOT demo-seeded: their real readings drive the dashboard live. Passed to seed_telemetry.py as SEED_SKIP_DEVICES."
+  type        = list(string)
+  default     = ["box-01"]
+}

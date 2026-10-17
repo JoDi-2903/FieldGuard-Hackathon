@@ -16,8 +16,16 @@ swa_location    = "westus2"       # SWA Free regions: westus2, eastus2, centralu
 # openai_capacity      = 10
 
 # Ingest shared secret.
-# RECOMMENDED: leave this empty and set the secret out-of-band after apply:
+# The live Arduino and the demo seeding both authenticate to /api/ingest with this.
+# When deploy_app = true (the default) it MUST be set here so the automatic deploy can
+# seed and so devices can post; setting it here injects it via app settings but also
+# writes it into terraform.tfstate (plaintext on disk).
+# To keep it out of state: set deploy_app = false, leave this empty, and set the secret
+# out-of-band after apply:
 #   az functionapp config appsettings set -g <rg> -n <func> --settings INGEST_SHARED_SECRET=<secret>
-# so it never gets written to terraform.tfstate (which is plaintext on disk).
-# Only set it here if you accept it being stored in local state.
 ingest_secret = ""
+
+# --- Automatic application deployment (see deploy.tf; defaults shown) ---
+# deploy_app     = true          # also publish function + frontend + seed fields on apply
+# seed_demo_data = true          # also stream demo telemetry + first scores
+# live_devices   = ["box-01"]    # real hardware excluded from demo seeding (SEED_SKIP_DEVICES)
