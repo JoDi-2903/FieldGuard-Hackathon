@@ -26,3 +26,7 @@ export const FARMS = [
 ];
 
 export const farmById = Object.fromEntries(FARMS.map((f) => [f.id, f]));
+
+// Farms whose risk level is hardcoded for the demo: the status is pinned and never
+// recomputed from live readings (the sensor tiles themselves still stream). HIGH => red.
+export const FORCED_RISK = { f01: 'HIGH' };

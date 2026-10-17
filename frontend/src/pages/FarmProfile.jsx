@@ -6,7 +6,7 @@ import { emphasize } from '../utils/emphasis.jsx';
 import CallRecording from '../components/CallRecording.jsx';
 import { TODAY_PLAN } from '../data/todayPlan.js';
 import { buildDay, formatTime } from '../data/schedule.js';
-import { farmById } from '../data/farms.js';
+import { farmById, FORCED_RISK } from '../data/farms.js';
 import { riskFromSensors } from '../data/farmDetails.js';
 import { useFarmDetail } from '../hooks/useFarmDetail.js';
 import { deviceIdForFarm } from '../data/farmFieldMap.js';
@@ -32,14 +32,20 @@ export default function FarmProfile({ officer, farmId, onOpenFarm, onBack, onSig
   // Risk colour + label follow the live sensor tiles, re-checked on a 10 s heartbeat so the
   // card can turn yellow or red as readings climb. The AI finding and steps keep their own
   // (backend) cadence, so the recommendation text does not flip every few seconds.
+  // f01 is pinned HIGH for the demo: no live status check, though its 4 sensor tiles still stream.
   const sensorsRef = useRef(details?.sensors);
   sensorsRef.current = details?.sensors;
-  const [risk, setRisk] = useState(() => riskFromSensors(details?.sensors));
+  const forcedRisk = FORCED_RISK[farmId];
+  const [risk, setRisk] = useState(() => forcedRisk ?? riskFromSensors(details?.sensors));
   useEffect(() => {
+    if (forcedRisk) {
+      setRisk(forcedRisk);
+      return undefined;
+    }
     setRisk(riskFromSensors(sensorsRef.current));
     const id = setInterval(() => setRisk(riskFromSensors(sensorsRef.current)), 10000);
     return () => clearInterval(id);
-  }, [farmId]);
+  }, [farmId, forcedRisk]);
   const [liveViewOpen, setLiveViewOpen] = useState(false);
   const s = details?.sensors;
   // starting values for the demo stream when the farm has no live box

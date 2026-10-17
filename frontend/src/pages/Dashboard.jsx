@@ -6,6 +6,7 @@ import { TODAY_PLAN } from '../data/todayPlan.js';
 import { buildDay, formatTime, RAINY_SEASON } from '../data/schedule.js';
 import { VISIT_TYPES, TYPE_ORDER } from '../data/visitTypes.js';
 import { fieldIdForFarm } from '../data/farmFieldMap.js';
+import { FORCED_RISK } from '../data/farms.js';
 import { useLiveRisk } from '../hooks/useLiveRisk.js';
 import { greeting } from '../utils/greeting.js';
 import './Dashboard.css';
@@ -27,7 +28,10 @@ function overlayPlan(plan, liveRisk) {
       const fieldId = fieldIdForFarm(v.farmId);
       const r = fieldId ? liveRisk[fieldId] : null;
       if (!r) return v;
-      const type = v.type === 'help' ? 'help' : r.color === 'green' ? 'regular' : 'warning';
+      // A forced-risk farm (e.g. f01) keeps its hand-set danger status; only its live
+      // reasoning/action text flows in, never its colour. Otherwise green => regular check.
+      const liveType = v.type === 'help' ? 'help' : r.color === 'green' ? 'regular' : 'warning';
+      const type = FORCED_RISK[v.farmId] ? v.type : liveType;
       return {
         ...v,
         type,
