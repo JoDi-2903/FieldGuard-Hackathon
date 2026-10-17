@@ -5,8 +5,10 @@ import { VISIT_TYPES } from '../data/visitTypes.js';
 // a 700 × 300 grid; the map is stretched horizontally to suit wide screens.
 const SX = 1000 / 700;
 const at = (p) => ({ x: p.x * SX, y: p.y });
+const WHITEFLY_RING = '#FF9E11';
 
-export default function RouteMap({ visits, selectedId, onSelect }) {
+// whiteflyIds: farms whose sticky-trap count is rising — drawn with an amber ring.
+export default function RouteMap({ visits, whiteflyIds = new Set(), selectedId, onSelect }) {
   const visitIds = new Set(visits.map((v) => v.farmId));
   const office = at(FIELD_OFFICE.pos);
   const route = [office, ...visits.map((v) => at(v.farm.pos)), office];
@@ -41,10 +43,14 @@ export default function RouteMap({ visits, selectedId, onSelect }) {
       {/* other assigned farms (not visited today) */}
       {FARMS.filter((f) => !visitIds.has(f.id)).map((f) => {
         const p = at(f.pos);
+        const rising = whiteflyIds.has(f.id);
         return (
-          <circle key={f.id} cx={p.x} cy={p.y} r="6" fill="#AAAAAC" stroke="#fff" strokeWidth="1.5">
-            <title>{`${f.name} — not on today's route`}</title>
-          </circle>
+          <g key={f.id}>
+            {rising && <circle cx={p.x} cy={p.y} r="11" fill="none" stroke={WHITEFLY_RING} strokeWidth="3" />}
+            <circle cx={p.x} cy={p.y} r="6" fill="#AAAAAC" stroke="#fff" strokeWidth="1.5">
+              <title>{`${f.name} — not on today's route${rising ? ' · whiteflies rising' : ''}`}</title>
+            </circle>
+          </g>
         );
       })}
 
@@ -77,7 +83,8 @@ export default function RouteMap({ visits, selectedId, onSelect }) {
         const isSel = v.farmId === selectedId;
         return (
           <g key={v.farmId} className="map__marker" transform={`translate(${p.x} ${p.y})`} onClick={() => onSelect(v.farmId)}>
-            <title>{`${v.order}. ${v.farm.name} — ${t.label}`}</title>
+            <title>{`${v.order}. ${v.farm.name} — ${t.label}${whiteflyIds.has(v.farmId) ? ' · whiteflies rising' : ''}`}</title>
+            {whiteflyIds.has(v.farmId) && <circle r={isSel ? 26 : 22} fill="none" stroke={WHITEFLY_RING} strokeWidth="4" />}
             <circle r={isSel ? 20 : 16} fill={t.color} stroke="#fff" strokeWidth="3" />
             <text y="6" textAnchor="middle" className="map__num">
               {v.order}

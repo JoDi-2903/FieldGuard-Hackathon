@@ -8,6 +8,7 @@ import { buildDay, formatTime, RAINY_SEASON } from '../data/schedule.js';
 import { VISIT_TYPES, TYPE_ORDER } from '../data/visitTypes.js';
 import { fieldIdForFarm } from '../data/farmFieldMap.js';
 import { useLiveRisk } from '../hooks/useLiveRisk.js';
+import { isTrapRising } from '../trap/whiteflyRisk.js';
 import { greeting } from '../utils/greeting.js';
 import './Dashboard.css';
 
@@ -40,11 +41,16 @@ function overlayPlan(plan, liveRisk) {
   };
 }
 
-export default function Dashboard({ officer, onSignOut, onOpenFarm }) {
+// Farms whose sticky-trap whitefly count rose since last week (flag only — route order is unchanged).
+const risingTrapFarmIds = (trapCounts = {}) =>
+  new Set(Object.keys(trapCounts).filter((farmId) => isTrapRising(trapCounts[farmId])));
+
+export default function Dashboard({ officer, trapCounts, onSignOut, onOpenFarm }) {
   const liveRisk = useLiveRisk();
   const day = useMemo(() => buildDay(overlayPlan(TODAY_PLAN, liveRisk)), [liveRisk]);
   const [selectedId, setSelectedId] = useState(day.visits[0]?.farmId);
   const today = new Date();
+  const whiteflyIds = useMemo(() => risingTrapFarmIds(trapCounts), [trapCounts]);
   const counts = TYPE_ORDER.map((type) => ({ type, n: day.visits.filter((v) => v.type === type).length }));
 
   return (
@@ -119,11 +125,15 @@ export default function Dashboard({ officer, onSignOut, onOpenFarm }) {
                   <i className="legend__dot is-small" />
                   Other assigned farms
                 </span>
+                <span className="legend__item">
+                  <i className="legend__ring" />
+                  Whiteflies rising
+                </span>
                 <span className="legend__item legend__note">Ordered by distance · schematic, not to scale</span>
               </div>
             </div>
             <div className="map__frame">
-              <RouteMap visits={day.visits} selectedId={selectedId} onSelect={setSelectedId} />
+              <RouteMap visits={day.visits} whiteflyIds={whiteflyIds} selectedId={selectedId} onSelect={setSelectedId} />
             </div>
           </section>
 
@@ -134,7 +144,7 @@ export default function Dashboard({ officer, onSignOut, onOpenFarm }) {
               </h2>
               <span className="panel__hint">in visit order · 20 farms on a 2-week cycle</span>
             </div>
-            <VisitList visits={day.visits} selectedId={selectedId} onSelect={setSelectedId} onOpenFarm={onOpenFarm} />
+            <VisitList visits={day.visits} whiteflyIds={whiteflyIds} selectedId={selectedId} onSelect={setSelectedId} onOpenFarm={onOpenFarm} />
           </section>
         </div>
       </main>

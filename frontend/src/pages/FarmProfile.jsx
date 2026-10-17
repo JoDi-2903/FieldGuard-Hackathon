@@ -5,6 +5,7 @@ import CallRecording from '../components/CallRecording.jsx';
 import VisitNotes from '../components/VisitNotes.jsx';
 import VisitPhotos from '../components/VisitPhotos.jsx';
 import VisitVerdict from '../components/VisitVerdict.jsx';
+import StickyTrap from '../components/StickyTrap.jsx';
 import { TODAY_PLAN } from '../data/todayPlan.js';
 import { buildDay, formatTime } from '../data/schedule.js';
 import { farmById } from '../data/farms.js';
@@ -12,6 +13,8 @@ import { riskFromSensors } from '../data/farmDetails.js';
 import { useFarmDetail } from '../hooks/useFarmDetail.js';
 import { VISIT_TYPES } from '../data/visitTypes.js';
 import { EMPTY_RECORD } from '../data/visitRecord.js';
+import { isTrapFarm } from '../data/stickyTraps.js';
+import { hasSickPlantNearby } from '../trap/whiteflyRisk.js';
 import './Dashboard.css';
 import './FarmProfile.css';
 
@@ -22,7 +25,18 @@ const initials = (name) =>
     .join('')
     .slice(0, 2);
 
-export default function FarmProfile({ officer, farmId, record = EMPTY_RECORD, onRecordChange, onOpenFarm, onBack, onSignOut }) {
+export default function FarmProfile({
+  officer,
+  farmId,
+  record = EMPTY_RECORD,
+  records = {},
+  onRecordChange,
+  trapHistory,
+  onAddTrapReading,
+  onOpenFarm,
+  onBack,
+  onSignOut,
+}) {
   const day = useMemo(() => buildDay(TODAY_PLAN), []);
   const idx = day.visits.findIndex((v) => v.farmId === farmId);
   const visit = day.visits[idx];
@@ -175,6 +189,24 @@ export default function FarmProfile({ officer, farmId, record = EMPTY_RECORD, on
             )}
           </section>
         </div>
+
+        {isTrapFarm(farmId) && (
+          <>
+            <h2 className="section-title">Sticky trap · whiteflies</h2>
+            <section className="panel trap-panel">
+              <div className="panel__head">
+                <h3 className="panel__title">This week's yellow card</h3>
+                <span className="panel__hint">whiteflies spread cassava mosaic · photograph the card once a week</span>
+              </div>
+              <StickyTrap
+                key={farmId}
+                history={trapHistory}
+                sickPlantNearby={hasSickPlantNearby(farmId, { ...records, [farmId]: record })}
+                onAddReading={onAddTrapReading}
+              />
+            </section>
+          </>
+        )}
 
         <h2 className="section-title">Documentation</h2>
         <div className="profile__grid profile__grid--doc">

@@ -1,7 +1,8 @@
 import { VISIT_TYPES } from '../data/visitTypes.js';
+import WhiteflyBadge from './WhiteflyBadge.jsx';
 
 // One line per farm in visit order: Farm – Owner | data-based finding | profile link.
-export default function VisitList({ visits, selectedId, onSelect, onOpenFarm }) {
+export default function VisitList({ visits, whiteflyIds = new Set(), selectedId, onSelect, onOpenFarm }) {
   return (
     <ol className="visits">
       {visits.map((v) => {
@@ -17,7 +18,10 @@ export default function VisitList({ visits, selectedId, onSelect, onOpenFarm }) 
             <span className="visit__who">
               <b className="visit__farm">{v.farm.name}</b> – {v.farm.owner}
             </span>
-            <span className="visit__finding">{v.summary}</span>
+            <span className="visit__finding">
+              {whiteflyIds.has(v.farmId) && <WhiteflyBadge />}
+              {v.summary}
+            </span>
             <button
               type="button"
               className="text-link visit__profile"

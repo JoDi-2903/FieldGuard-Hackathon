@@ -1,0 +1,21 @@
+/* whitefly marker on dashboard / list */
+.whitefly-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: 8px;
+  padding: 1px 7px;
+  background: #fff4e3;
+  border: 1px solid var(--t-orange);
+  color: #a35f00;
+  font: 700 13px/18px var(--f-head);
+  white-space: nowrap;
+  vertical-align: 1px;
+}
+
+.legend__ring {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 3px solid var(--t-orange);
+}
