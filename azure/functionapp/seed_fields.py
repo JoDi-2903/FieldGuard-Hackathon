@@ -10,8 +10,12 @@ Usage:
 Each field maps to a sensor `deviceId`. For the hackathon demo:
 - field-a is the real box (box-01) in demo mode: 10-minute "nights", so spraying the
   leaf plate for 3 minutes turns it yellow. Set "demoMode": False for real use.
-- field-b is box-02, fed by arduino/scripts/replay_blight_nights.py (4 blight nights => red).
+  It drives farm f01 (Hillside) live — the dashboard's demo hero.
+- field-b is box-02, fed by arduino/scripts/replay_blight_nights.py (4 blight nights => red);
+  it drives farm f04 (Mango Grove), the late-blight showcase.
 - field-c has no device, to show the "no data / stale" caveat path.
+- field-d is box-03, a synthetic medium-risk field (2 blight nights => yellow); it drives
+  farm f14 (Valley View).
 """
 
 from __future__ import annotations
@@ -47,6 +51,15 @@ DEMO_FIELDS = [
         "plantingDate": "2026-09-10",
         "deviceId": "",
         "knownCases": "none reported",
+        "demoMode": False,
+    },
+    {
+        "RowKey": "field-d",
+        "name": "Field D - Valley plot",
+        "crop": "maize",
+        "plantingDate": "2026-09-18",
+        "deviceId": "box-03",
+        "knownCases": "late blight reported in the area",
         "demoMode": False,
     },
 ]

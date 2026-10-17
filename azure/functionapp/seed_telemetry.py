@@ -9,6 +9,8 @@ optionally triggers a scoring run so risk/alerts/call/steps are ready immediatel
   box-01  -> calm, healthy field  (expected green)
   box-02  -> blight-favourable:   high overnight humidity + mild temps + rain
              (expected yellow/red; this is the field-b "late blight" showcase)
+  box-03  -> borderline blight:    humid nights + ~6 h leaf wetness at mild temps
+             (expected yellow; this is the field-d medium-risk field)
 
 A device backed by real hardware (e.g. box-01, a live Arduino) should NOT be
 demo-seeded: the synthetic rows would pollute its real stream. Exclude it with
@@ -77,7 +79,23 @@ def _blight(hour: float, i: int) -> dict:
     }
 
 
-DEVICES = {"box-01": _healthy, "box-02": _blight}
+def _medium(hour: float, i: int) -> dict:
+    """box-03: borderline blight — humid nights and a ~6 h early-morning wet window at
+    mild temps, so a few windows count as blight nights (field-d, expected yellow)."""
+    humidity = 83 + 9 * math.sin((hour - 4) / 24 * 2 * math.pi)    # ~74-92
+    temp = 20.5 + 2.5 * math.sin((hour - 15) / 24 * 2 * math.pi)   # ~18-23 (blight band)
+    soil = 36 + 3 * math.sin(i / 250)
+    # Leaf plate wet ~01:00-07:00 (~6 h): just enough for a blight night under the rule.
+    rain = 1 if 1 <= hour < 7 else 0
+    return {
+        "temperature_c": round(temp, 1),
+        "humidity_pct": round(min(99.0, humidity), 1),
+        "rain": rain,
+        "soil_pct": round(soil, 1),
+    }
+
+
+DEVICES = {"box-01": _healthy, "box-02": _blight, "box-03": _medium}
 
 
 def _generate(device_id: str, pattern, now: dt.datetime, days: int) -> list[dict]:
