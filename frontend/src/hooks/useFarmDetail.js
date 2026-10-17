@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { farmDetails } from '../data/farmDetails.js';
+import { farmDetails, SENSOR_META } from '../data/farmDetails.js';
 import { fieldIdForFarm } from '../data/farmFieldMap.js';
 import { getFarmDetail } from '../api/client.js';
 
@@ -7,20 +7,53 @@ import { getFarmDetail } from '../api/client.js';
 // so a 20 s poll keeps the profile fresh without hammering the API.
 const POLL_MS = 20000;
 
+// The Finding on the farm profile: the AI reasoning as headline, plus one line per
+// sensor that is out of range (same order and colours as the KPI tiles).
+function liveFinding(live) {
+  const reasons = Object.entries(live.sensors ?? {})
+    .filter(([, s]) => s.status !== 'ok')
+    .map(([id, s]) => ({
+      status: s.status,
+      label: SENSOR_META[id]?.label ?? id,
+      text: `**${s.value} ${SENSOR_META[id]?.unit ?? ''}**. ${undash(s.note)}`,
+    }));
+  return { title: live.risk.reasoning, reasons };
+}
+
+const undash = (text) => String(text ?? '').replace(/\s+[—–-]\s+/g, ', ');
+
+// Call header from the model looks like "Farmer hotline - 15 Oct, 07:40 - 0:52 - translated";
+// the profile shows only the source and time.
+function shortMeta(meta) {
+  if (!meta) return meta;
+  return meta.split(/\s+[-·–—]\s+/).slice(0, 2).join(' · ');
+}
+
 // Overlay live backend detail onto the static scaffold. Sensors/freshness come
 // straight from readings; the AI-generated content (disease, alerts, call, steps)
 // only takes over once the field has actually been scored (live.risk present),
 // so an un-scored field still shows the hand-authored placeholder.
 function merge(base, live) {
   const merged = { ...(base ?? {}) };
-  if (live.sensors) merged.sensors = live.sensors;
+  // backend notes use dashes ("Above 90 % — leaf-wetness risk"); the UI style avoids them
+  if (live.sensors) {
+    merged.sensors = Object.fromEntries(
+      Object.entries(live.sensors).map(([id, s]) => [id, { ...s, note: undash(s.note) }])
+    );
+  }
   if (live.sensorNote) merged.sensorNote = live.sensorNote;
   if (live.sensorsUpdated) merged.sensorsUpdated = live.sensorsUpdated;
-  if (live.stage) merged.stage = live.stage;
+  // backend stage ends with the crop ("Planted 12 Aug · 9 weeks · maize"); the card shows the crop already
+  if (live.stage) merged.stage = live.crop ? live.stage.replace(new RegExp(` · ${live.crop}$`, 'i'), '') : live.stage;
   if (live.risk) {
-    if (live.disease) merged.disease = live.disease;
+    merged.risk = live.risk;
+    merged.disease = live.disease ?? null;
     merged.alerts = live.alerts ?? [];
-    if (live.call) merged.call = live.call;
+    if (live.risk.reasoning) merged.finding = liveFinding(live);
+    if (live.call) {
+      merged.call = { ...live.call, meta: shortMeta(live.call.meta) };
+      merged.calls = [merged.call]; // the backend stores one call per scoring run
+    }
     if (live.steps && live.steps.length) merged.steps = live.steps;
   }
   return merged;

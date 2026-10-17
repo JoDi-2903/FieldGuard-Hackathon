@@ -15,5 +15,8 @@ async function getJSON(path) {
 export const getFields = () => getJSON('/fields');
 export const getRisk = () => getJSON('/risk');
 export const getFarmDetail = (fieldId) => getJSON(`/farms/${encodeURIComponent(fieldId)}`);
+// newest first; the device posts every 5 s in demo mode (15 min in the field)
+export const getReadings = (deviceId, limit = 120) =>
+  getJSON(`/readings?deviceId=${encodeURIComponent(deviceId)}&limit=${limit}`);
 
 export { API_BASE };
