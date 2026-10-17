@@ -58,20 +58,68 @@ secrets; `../frontend/.env.example` documents the optional local-dev variables.
 
 ---
 
-## Deploy from scratch
+## Deploy
+
+A single `terraform apply` provisions the infrastructure **and** deploys the
+application — the Function App code, the React dashboard, and the demo data — so a
+fresh clone comes up fully working. This is controlled by `deploy_app` (default
+`true`); the orchestration lives in `terraform/deploy.tf`.
 
 ```bash
 az login
 
-# 1. Provision all Azure resources (Standard Static Web App + linked-backend
-#    registration to the Function App are created here)
+cd terraform
+cp terraform.tfvars.template terraform.tfvars
+#   → fill in: subscription_id (required) and ingest_secret (required when deploy_app=true —
+#     the live Arduino and the demo seeding both authenticate to /api/ingest with it).
+#     resource_group_name and regions are optional.
+terraform init
+terraform apply
+```
+
+That apply runs, in order:
+
+1. provision all Azure resources (Standard Static Web App + linked-backend registration);
+2. publish the Python Function App code (`func publish`);
+3. seed the demo field definitions (required — the read APIs return nothing without them);
+4. build the React dashboard and upload `dist/` to the Static Web App;
+5. if `seed_demo_data = true`, stream demo telemetry and compute the first scores.
+
+Each step is keyed on a hash of its source, so re-running `terraform apply` redeploys
+only what changed — safe to iterate.
+
+### Deploy variables
+
+| Variable | Default | Effect |
+|---|---|---|
+| `deploy_app` | `true` | Publish the function, build+upload the frontend, and seed fields during apply. Set `false` to provision infrastructure only and deploy the app manually (below). |
+| `seed_demo_data` | `true` | Also stream demo telemetry and compute first scores so the dashboard has data immediately. |
+| `live_devices` | `["box-01"]` | Devices backed by real hardware — **excluded** from demo telemetry seeding (passed as `SEED_SKIP_DEVICES`) so their real readings alone drive the dashboard. `box-01` → `field-a` → farm "Mango Grove" (`f04`): pour water on the sensor and the live view reacts within ~5 s. |
+
+> **Secret in state:** setting `ingest_secret` in tfvars injects it via app settings (no
+> separate `az` step) but also writes it into the plaintext local `terraform.tfstate`. To
+> keep it out of state, set `deploy_app = false`, leave `ingest_secret` empty, and use the
+> manual flow — setting the secret out-of-band in step 2.
+
+> **Apply-host tools:** besides `az login`, the automatic deploy needs `node`/`npm`,
+> `python3`, and network access for `npx` to fetch `func` and the SWA CLI.
+
+### Manual / infra-only deploy
+
+Set `deploy_app = false` (Terraform then provisions infrastructure only) and run the
+application steps yourself:
+
+```bash
+az login
+
+# 1. Provision infrastructure only (deploy_app = false)
 cd terraform
 cp terraform.tfvars.template terraform.tfvars
 #    → fill in: subscription_id (required), resource_group_name, regions (optional)
 terraform init
 terraform apply
 
-# 2. Set the ingest secret (done out-of-band so it never lands in tfstate)
+# 2. Set the ingest secret (out-of-band so it never lands in tfstate)
 az functionapp config appsettings set \
   -g "$(terraform output -raw resource_group_name)" \
   -n "$(terraform output -raw function_app_name)" \
@@ -105,10 +153,12 @@ npx -y @azure/static-web-apps-cli deploy ./dist \
   --env production
 
 # 5. Seed demo telemetry through the live API and compute the first scores so the
-#    dashboard's live overlay has data to show immediately.
+#    dashboard's live overlay has data to show immediately. Exclude real hardware
+#    (the live box-01) so its real stream is not overwritten:
 cd ../azure/functionapp
 export API_BASE_URL="$(cd ../terraform && terraform output -raw api_base_url)"
 export INGEST_SHARED_SECRET=<the-same-secret-from-step-2>
+export SEED_SKIP_DEVICES=box-01
 python seed_telemetry.py
 ```
 
