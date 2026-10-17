@@ -94,7 +94,7 @@ only what changed — safe to iterate.
 |---|---|---|
 | `deploy_app` | `true` | Publish the function, build+upload the frontend, and seed fields during apply. Set `false` to provision infrastructure only and deploy the app manually (below). |
 | `seed_demo_data` | `true` | Also stream demo telemetry and compute first scores so the dashboard has data immediately. |
-| `live_devices` | `["box-01"]` | Devices backed by real hardware — **excluded** from demo telemetry seeding (passed as `SEED_SKIP_DEVICES`) so their real readings alone drive the dashboard. `box-01` → `field-a` → farm "Mango Grove" (`f04`): pour water on the sensor and the live view reacts within ~5 s. |
+| `live_devices` | `["box-01"]` | Devices backed by real hardware — **excluded** from demo telemetry seeding (passed as `SEED_SKIP_DEVICES`) so their real readings alone drive the dashboard. `box-01` → `field-a` → farm "Hillside Farm" (`f01`): pour water on the sensor and the live view reacts within ~5 s. |
 
 > **Secret in state:** setting `ingest_secret` in tfvars injects it via app settings (no
 > separate `az` step) but also writes it into the plaintext local `terraform.tfstate`. To
