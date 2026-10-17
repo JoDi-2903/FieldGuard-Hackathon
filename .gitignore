@@ -43,6 +43,7 @@ terraform.rc
 # Uncomment the line below if you want to ignore planout files.
 # planout
 
+.DS_Store
 brainstorming.md
 
 # Dashboard config with real deployment URLs (use config.js.template as base)
