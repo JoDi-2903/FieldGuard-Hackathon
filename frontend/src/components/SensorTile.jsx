@@ -1,35 +1,49 @@
 import { SENSOR_META } from '../data/farmDetails.js';
 
-const STATUS_COLOR = { ok: '#2FAB16', warn: '#FF9E11', alert: '#CF0033' };
+const STATUS_COLOR = { ok: '#2FAB16', warn: '#E08400', alert: '#CF0033' };
 
-function Sparkline({ values, color }) {
-  const w = 100;
-  const h = 28;
+// 7-day time series: line, light area underneath, and a dot on today's value.
+function Trend({ values, color }) {
+  const w = 120;
+  const h = 44;
   const min = Math.min(...values);
   const max = Math.max(...values);
   const span = max - min || 1;
-  const pts = values.map((v, i) => `${(i / (values.length - 1)) * w},${h - 3 - ((v - min) / span) * (h - 6)}`);
+  const x = (i) => (i / (values.length - 1)) * w;
+  const y = (v) => h - 5 - ((v - min) / span) * (h - 12);
+  const line = values.map((v, i) => `${x(i)},${y(v)}`).join(' ');
+  const last = values.length - 1;
   return (
-    <svg className="sensor__spark" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" aria-hidden="true">
-      <polyline points={pts.join(' ')} fill="none" stroke={color} strokeWidth="2" vectorEffect="non-scaling-stroke" />
+    <svg className="sensor__trend" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" aria-hidden="true">
+      <polygon points={`0,${h} ${line} ${w},${h}`} fill={color} opacity="0.05" />
+      <polyline points={line} fill="none" stroke={color} strokeWidth="1.6" vectorEffect="non-scaling-stroke" />
+      <circle cx={x(last)} cy={y(values[last])} r="3" fill={color} vectorEffect="non-scaling-stroke" />
     </svg>
   );
 }
 
+// One KPI tile: what is measured, today's value (WHH figure style), what it means, 7-day trend.
 export default function SensorTile({ id, reading }) {
   const meta = SENSOR_META[id];
   const color = STATUS_COLOR[reading.status];
   return (
     <div className={`sensor is-${reading.status}`}>
-      <div className="sensor__label">{meta.label}</div>
-      <div className="sensor__value">
+      <span className="sensor__label">
+        <i className="sensor__dot" style={{ background: color }} />
+        {meta.label}
+      </span>
+      <span className="sensor__value" style={{ color }}>
         {reading.value}
         <span className="sensor__unit">{meta.unit}</span>
-      </div>
-      <Sparkline values={reading.history} color={color} />
-      <div className="sensor__note" style={{ color: reading.status === 'ok' ? undefined : color }}>
+      </span>
+      <span className="sensor__note" style={{ color: reading.status === 'ok' ? undefined : color }}>
         {reading.note}
-      </div>
+      </span>
+      <Trend values={reading.history} color={color} />
+      <span className="sensor__axis">
+        <span>7 days ago</span>
+        <span>today</span>
+      </span>
     </div>
   );
 }
