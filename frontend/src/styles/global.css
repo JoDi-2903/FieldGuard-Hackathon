@@ -31,6 +31,11 @@ a {
   text-decoration: none;
 }
 
+/* the hidden attribute always wins over component display rules (e.g. inactive tabs) */
+[hidden] {
+  display: none !important;
+}
+
 .wrap {
   max-width: var(--container);
   margin: 0 auto;

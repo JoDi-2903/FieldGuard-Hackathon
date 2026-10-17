@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react';
 import AppHeader from '../components/AppHeader.jsx';
 import DayCalendar from '../components/DayCalendar.jsx';
 import RouteMap from '../components/RouteMap.jsx';
-import VisitList from '../components/VisitList.jsx';
 import { TODAY_PLAN } from '../data/todayPlan.js';
 import { buildDay, formatTime, RAINY_SEASON } from '../data/schedule.js';
 import { VISIT_TYPES, TYPE_ORDER } from '../data/visitTypes.js';
@@ -17,9 +16,9 @@ const SUMMARY_TEXT = {
   regular: (n) => (n === 1 ? 'regular check' : 'regular checks'),
 };
 
-// Overlay live risk onto the static day plan for sensor-backed farms. A farmer's
-// own call for help still outranks a sensor verdict; otherwise green => a regular
-// check and yellow/red => a disease warning, with the AI reasoning as the summary.
+// Overlay live risk (GET /api/risk) onto the static day plan for sensor-backed farms.
+// A farmer's own call for help still outranks a sensor verdict; otherwise green =>
+// regular check, yellow/red => disease warning, with the AI reasoning as the summary.
 function overlayPlan(plan, liveRisk) {
   if (!liveRisk || Object.keys(liveRisk).length === 0) return plan;
   return {
@@ -45,38 +44,21 @@ export default function Dashboard({ officer, onSignOut, onOpenFarm }) {
   const day = useMemo(() => buildDay(overlayPlan(TODAY_PLAN, liveRisk)), [liveRisk]);
   const [selectedId, setSelectedId] = useState(day.visits[0]?.farmId);
   const today = new Date();
-  const counts = TYPE_ORDER.map((type) => ({ type, n: day.visits.filter((v) => v.type === type).length }));
+  const counts = TYPE_ORDER.map((type) => ({ type, n: day.visits.filter((v) => v.type === type).length })).filter((c) => c.n > 0);
 
   return (
     <div className="dash">
       <AppHeader officer={officer} onSignOut={onSignOut} wide />
 
+      {/* thin band, same as the farm profile */}
       <section className="dash__band">
         <div className="wrap wrap--wide dash__band-inner">
-          <div>
-            <div className="topline dash__topline">
-              {today.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-            </div>
-            <h1 className="dash__title">
-              {greeting(today)}, {officer.name}. Here are your priorities for today.
-            </h1>
-          </div>
-          <div className="dash__summary">
-            {counts.map(({ type, n }) => (
-              <div className="dash__stat" key={type}>
-                <span className={`dash__stat-num${VISIT_TYPES[type].danger ? ' is-danger' : ''}`}>{n}</span>
-                <span className="dash__stat-text">{SUMMARY_TEXT[type](n)}</span>
-              </div>
-            ))}
-            <div className="dash__stat dash__stat--route">
-              <span className="dash__stat-num">{day.visits.length}</span>
-              <span className="dash__stat-text">
-                visits · {day.totalKm} km
-                <br />
-                back at {formatTime(day.backAt)}
-              </span>
-            </div>
-          </div>
+          <h1 className="dash__title">
+            {greeting(today)}, {officer.name}. Here are your priorities for today.
+          </h1>
+          <span className="dash__date">
+            {today.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
+          </span>
         </div>
       </section>
 
@@ -89,18 +71,38 @@ export default function Dashboard({ officer, onSignOut, onOpenFarm }) {
             <div className="legend">
               <span className="legend__item">
                 <i className="legend__swatch is-visit" />
-                Farm visit
+                Visit
               </span>
               <span className="legend__item">
                 <i className="legend__swatch is-travel" />
-                Driving{RAINY_SEASON ? ' (rainy season ×2)' : ''}
+                Drive{RAINY_SEASON ? ' (rainy ×2)' : ''}
               </span>
             </div>
           </div>
-          <DayCalendar events={day.events} selectedId={selectedId} onSelect={setSelectedId} now={today} />
+          <DayCalendar events={day.events} selectedId={selectedId} onSelect={setSelectedId} onOpen={onOpenFarm} now={today} />
         </section>
 
         <div className="dash__right">
+          <section className="panel glance" aria-label="Today at a glance">
+            {counts.map(({ type, n }) => (
+              <div className="figure" key={type}>
+                <span className={`figure__value${VISIT_TYPES[type].danger ? ' is-danger' : ''}`}>{n}</span>
+                <span className="figure__label">{SUMMARY_TEXT[type](n)}</span>
+              </div>
+            ))}
+            <div className="figure">
+              <span className="figure__value is-neutral">{day.visits.length}</span>
+              <span className="figure__label">visits today</span>
+            </div>
+            <div className="figure">
+              <span className="figure__value is-neutral">{day.totalKm} km</span>
+              <span className="figure__label">driving</span>
+            </div>
+            <div className="figure">
+              <span className="figure__value is-neutral">{formatTime(day.backAt)}</span>
+              <span className="figure__label">back at the office</span>
+            </div>
+          </section>
           <section className="panel dash__map" aria-labelledby="map-title">
             <div className="panel__head">
               <h2 id="map-title" className="panel__title">
@@ -119,22 +121,12 @@ export default function Dashboard({ officer, onSignOut, onOpenFarm }) {
                   <i className="legend__dot is-small" />
                   Other assigned farms
                 </span>
-                <span className="legend__item legend__note">Ordered by distance · schematic, not to scale</span>
+                <span className="legend__item legend__note">ordered by distance · not to scale</span>
               </div>
             </div>
             <div className="map__frame">
-              <RouteMap visits={day.visits} selectedId={selectedId} onSelect={setSelectedId} />
+              <RouteMap visits={day.visits} selectedId={selectedId} onSelect={setSelectedId} onOpen={onOpenFarm} />
             </div>
-          </section>
-
-          <section className="panel dash__list" aria-labelledby="list-title">
-            <div className="panel__head">
-              <h2 id="list-title" className="panel__title">
-                Farms to visit
-              </h2>
-              <span className="panel__hint">in visit order · 20 farms on a 2-week cycle</span>
-            </div>
-            <VisitList visits={day.visits} selectedId={selectedId} onSelect={setSelectedId} onOpenFarm={onOpenFarm} />
           </section>
         </div>
       </main>

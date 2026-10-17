@@ -1,7 +1,8 @@
 # Field Guard — Welthungerhilfe
 
 Dashboard for a Welthungerhilfe extension officer (Felix) who advises ~20 farmers on crop
-harvesting, crop disease and farm visits. Built step by step; this is step 1: the login page.
+disease and farm visits: login, today's priorities (schedule + route map) and a farm profile
+(sensor KPIs, AI finding, farmer's report, steps to take).
 
 ## Run
 
@@ -9,10 +10,29 @@ Requires Node.js 18+.
 
 ```bash
 npm install
-npm run dev      # http://localhost:5173
+npm run dev      # http://localhost:5173 — /api is proxied to the Functions host (vite.config.js)
 ```
 
 Demo login: `felix` / `demo` (mock, see `src/auth/officer.js`).
+
+## Live backend data
+
+`src/api/client.js` calls the Azure Function App (`/api`, same origin in production).
+
+| Screen | Endpoint | What becomes live |
+|---|---|---|
+| Dashboard | `GET /api/risk` (polled 20 s) | visit type (green → regular check, yellow/red → disease warning), summary |
+| Farm profile | `GET /api/farms/{fieldId}` (polled 20 s) | sensor tiles + 7-day history, update time, risk level (AI colour), finding (AI reasoning + out-of-range sensors), farmer call, steps |
+| Live sensor view (click the sensor tiles) | `GET /api/readings?deviceId=…` (polled 5 s) | 4 time series of the last 120 readings; Azure architecture from `azure/terraform` with each new reading, poll, LED colour and scoring run animated |
+
+Only farms mapped in `src/data/farmFieldMap.js` are live (`f02` Riverside Plot → `field-b`
+→ `box-02`, `f04` Mango Grove → `field-a` → `box-01`). Every other farm, and every farm
+while the backend is unreachable, shows the demo data from `src/data/`. The farm profile
+labels the sensor block "Live" or "Demo data".
+
+`box-01` is a real Arduino: its readings drive `f04` live, so physically changing the
+sensor (e.g. pouring water on it) moves the live sensor view within ~5 s and the farm's
+sensor tiles within ~20 s. `box-02` is demo-seeded as the late-blight showcase (`f02`).
 
 ## Structure
 
@@ -21,20 +41,22 @@ src/
   styles/tokens.css        WHH design tokens (from ../welthungerhilfe/output/DESIGN.md)
   styles/global.css        base type, pill buttons, text links
   assets/whh-logo.png      official WHH logo (header); public/favicon.png = cropped mark (browser tab)
-  components/              Logo, AppHeader, DayCalendar, RouteMap, VisitList, TypeBadge,
-                           SensorTile, VisitNotes (text + voice recording), VisitPhotos, VisitVerdict
+  components/              Logo, AppHeader, DayCalendar, RouteMap, SensorTile, InfoIcon, CallRecording,
+                           SensorModal + LiveChart + ArchitectureFlow (live sensor view & Azure flow animation)
+  api/client.js            backend client (/risk, /farms/{id}, /readings, /fields)
+  hooks/                   useLiveRisk, useFarmDetail, useLiveReadings — poll the API and overlay live data
+  data/farmFieldMap.js     which demo farms are backed by a real backend field/device
   data/farmDetails.js      contact, crop stage, sensor readings (7 days), call transcripts / alerts; risk score
-  data/visitRecord.js      shape of what the officer captures during a visit
-  utils/                   greeting, time formatting
-  auth/officer.js          mock officer profile + sign-in
+  data/sensorMetrics.js    live-reading metric model + thresholds (mirror azure/functionapp/views.py)
   data/farms.js            20 assigned farms (mock) + map positions
-  data/todayPlan.js        today's 4 visits in route order: type, duration, drive time/km, finding, advice focus
+  data/todayPlan.js        today's visits in route order: type, duration, drive time/km, finding, advice focus
   data/schedule.js         builds the 08:00–16:00 day (drives + visits); RAINY_SEASON doubles drive times
   data/visitTypes.js       regular check / sensor disease warning / farmer asked for help
+  utils/                   greeting, time formatting, emphasis (**bold** markup)
+  auth/officer.js          mock officer profile + sign-in
   pages/LoginPage.jsx      login screen
-  pages/Dashboard.jsx      Felix's priorities for today (calendar + route map + farm list)
-  pages/FarmProfile.jsx    farm profile: preparation (farm, problem summary, transcript, risk)
-                           + during the visit (notes chat with voice notes, photos, verdict)
+  pages/Dashboard.jsx      Felix's priorities for today (calendar + route map), live risk overlay
+  pages/FarmProfile.jsx    farm profile: owner card, risk (sensor data vs. farmer's report), steps to take
 ```
 
 ## Field assumptions
