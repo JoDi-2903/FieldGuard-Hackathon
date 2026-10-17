@@ -1,4 +1,4 @@
-// Mock data for Felix's 20 assigned farms. Names and places are placeholders.
+// Mock data for Hoang's 20 assigned farms. Names and places are placeholders.
 // `pos` is a position on the schematic route map (viewBox 700 × 300).
 export const FIELD_OFFICE = { name: 'WHH field office', pos: { x: 50, y: 250 } };
 

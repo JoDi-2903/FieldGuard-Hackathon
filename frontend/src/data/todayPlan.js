@@ -7,39 +7,43 @@
 // summary: one-line data-based finding for the list; finding/focus: detail for the farm profile.
 // travelMin / travelKm: the drive to this farm from the previous stop.
 //
+// For sensor-backed farms (f01, f04, f14 — see data/farmFieldMap.js) these strings are only an
+// offline fallback: Dashboard.overlayPlan() replaces summary/finding/focus with the Azure model's
+// live reasoning/recommended_action, and the type follows the live risk colour.
+//
 // Not on today's route: Stone Hill Farm (f03, help request about cassava mosaic) —
 // its details and call recording stay in farmDetails.js; add it back here to schedule it.
 export const TODAY_PLAN = {
   visits: [
     {
-      farmId: 'f02',
-      summary: 'Late blight risk — sensors flag 4 days of leaf wetness',
-      type: 'warning',
-      durationMin: 60,
-      travelMin: 30,
-      travelKm: 14,
-      finding: 'Leaf wetness above 10 h/day for 4 days at 18–22 °C — high risk of late blight.',
-      focus: 'Inspect lower leaves, advise preventive spraying and wider spacing for airflow.',
-    },
-    {
-      farmId: 'f04',
-      summary: 'Regular visit — all data normal',
-      type: 'regular',
-      durationMin: 45,
-      travelMin: 25,
-      travelKm: 10,
-      finding: 'All sensor readings normal and no concerns reported. Pods are forming.',
-      focus: 'Routine check and timing for dry-bean harvest.',
-    },
-    {
-      farmId: 'f14',
-      summary: 'Regular visit — all data normal',
+      farmId: 'f01',
+      summary: 'Live sensor box — readings streaming from the field',
       type: 'regular',
       durationMin: 45,
       travelMin: 20,
+      travelKm: 7,
+      finding: 'Real sensor box reporting live. Readings currently in range.',
+      focus: 'Routine check; confirm the sensor box and solar panel are seated well.',
+    },
+    {
+      farmId: 'f04',
+      summary: 'Late blight risk — sensors flag several nights of leaf wetness',
+      type: 'warning',
+      durationMin: 60,
+      travelMin: 25,
+      travelKm: 10,
+      finding: 'Repeated humid nights at 18–22 °C with long leaf wetness — high risk of late blight.',
+      focus: 'Inspect lower leaves, advise preventive spraying and wider spacing for airflow.',
+    },
+    {
+      farmId: 'f14',
+      summary: 'Early blight signal — a couple of borderline nights',
+      type: 'warning',
+      durationMin: 45,
+      travelMin: 20,
       travelKm: 8,
-      finding: 'All sensor readings normal and no concerns reported. Roots are bulking.',
-      focus: 'Weeding and check young leaves for early mosaic signs.',
+      finding: 'A few blight-favourable nights building up — medium risk, worth a closer look.',
+      focus: 'Check young leaves for early spots; advise morning-only watering.',
     },
     {
       farmId: 'f05',

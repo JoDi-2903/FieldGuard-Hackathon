@@ -17,6 +17,23 @@ export const SENSOR_META = {
 };
 
 const DETAILS = {
+  // f01 is backed by the real box-01 Arduino (field-a). Sensors, risk and the AI finding
+  // come from the live backend; these static values are only the offline fallback.
+  f01: {
+    phone: '0701 332 884',
+    address: 'Upper Valley, past the borehole, Field District North',
+    stage: 'Planted 15 Sep · young plants',
+    lastVisit: '4 Oct — sensor box installed and checked',
+    sensorsUpdated: 'waiting for live data',
+    sensors: {
+      humidity: { value: 64, status: 'ok', note: 'In range', history: [62, 63, 65, 64, 63, 64, 64] },
+      temperature: { value: 26, status: 'ok', note: 'In range', history: [25, 26, 27, 26, 26, 25, 26] },
+      leafWetness: { value: 3, status: 'ok', note: 'In range', history: [2, 3, 3, 4, 3, 2, 3] },
+      soilMoisture: { value: 31, status: 'ok', note: 'In range', history: [33, 32, 31, 31, 32, 31, 31] },
+    },
+    alerts: [],
+  },
+  // Riverside is now a routine farm (its sensor box moved to f01, its blight role to f04).
   f02: {
     ownerPhoto: ownerF02,
     phone: '0712 448 190',
@@ -25,64 +42,12 @@ const DETAILS = {
     lastVisit: '2 Oct — regular check, no issues',
     sensorsUpdated: '2 h ago',
     sensors: {
-      humidity: { value: 94, status: 'alert', note: 'Above 90 % for 6 nights', history: [78, 82, 88, 91, 93, 95, 94] },
-      temperature: { value: 20, status: 'warn', note: '18–22 °C favours blight', history: [24, 23, 22, 21, 20, 20, 20] },
-      leafWetness: { value: 11.5, status: 'alert', note: 'Above 10 h for 4 days', history: [6, 7, 9, 10.5, 11, 12, 11.5] },
-      soilMoisture: { value: 34, status: 'ok', note: 'In range', history: [30, 31, 33, 35, 36, 35, 34] },
+      humidity: { value: 68, status: 'ok', note: 'In range', history: [66, 67, 69, 68, 67, 68, 68] },
+      temperature: { value: 26, status: 'ok', note: 'In range', history: [25, 26, 27, 26, 26, 25, 26] },
+      leafWetness: { value: 3, status: 'ok', note: 'In range', history: [3, 3, 4, 3, 3, 2, 3] },
+      soilMoisture: { value: 33, status: 'ok', note: 'In range', history: [31, 32, 33, 34, 33, 33, 33] },
     },
-    disease: 'late blight',
-    // Hardcoded for now: why these readings point to late blight.
-    finding: {
-      title: 'Weather is ideal for late blight to infect the maize',
-      reasons: [
-        { icon: 'humidity', status: 'alert', label: 'Humid nights', text: '**Above 90 %** for **6 nights**. Spores thrive in damp air.' },
-        { icon: 'temperature', status: 'warn', label: 'Cool days', text: '**18 to 22 °C**, the ideal range for spores.' },
-        { icon: 'leaf', status: 'alert', label: 'Wet leaves', text: 'Wet **11.5 h a day**. Spores need only **10 h** to infect.' },
-      ],
-    },
-    alerts: [
-      { who: 'Sensor', at: '13 Oct, 06:00', text: 'Leaf wetness above 10 h — day 2.' },
-      { who: 'Sensor', at: '15 Oct, 06:00', text: 'Leaf wetness above 10 h — day 4. Late blight risk raised to HIGH.' },
-      { who: 'System', at: '15 Oct, 06:05', text: 'SMS sent to farmer: avoid overhead watering, officer visit planned.' },
-    ],
-    call: {
-      meta: 'Farmer hotline · 15 Oct, 07:40',
-      summary: 'Grace observed **dark, water-soaked spots** on the **lower leaves** and a **white fuzz** underneath, after **foggy mornings**. **Not sprayed** yet.',
-      audio: null,
-      duration: 52,
-      lines: [
-        { t: 0, who: 'Farmer', text: 'Good morning, this is Grace from Riverside. I got the SMS about my maize.' },
-        { t: 7, who: 'WHH hotline', text: 'Thank you for calling. What do you see on the plants?' },
-        { t: 12, who: 'Farmer', text: 'Some lower leaves have dark spots, they look wet, like burnt. It started two days ago.' },
-        { t: 21, who: 'WHH hotline', text: 'Do you see anything under the leaves?' },
-        { t: 25, who: 'Farmer', text: 'Yes, a little white fuzz on some of them. The mornings have been very foggy.' },
-        { t: 33, who: 'WHH hotline', text: 'Have you sprayed anything yet?' },
-        { t: 36, who: 'Farmer', text: 'No, nothing yet. I water in the evening with the can.' },
-        { t: 42, who: 'WHH hotline', text: 'Please stop watering from above for now. Felix will visit you this morning.' },
-      ],
-    },
-    // earlier calls since the last visit (newest first after `call`)
-    olderCalls: [
-      {
-        meta: 'Farmer hotline · 11 Oct, 17:05',
-        summary: 'Grace observed **leaves curling** after **two misty nights** and asked whether to **water less**. No spots yet.',
-        audio: null,
-        duration: 31,
-        lines: [
-          { t: 0, who: 'Farmer', text: 'Hello, this is Grace from Riverside. Some maize leaves are curling.' },
-          { t: 8, who: 'WHH hotline', text: 'Do you see any spots on them?' },
-          { t: 12, who: 'Farmer', text: 'No spots. It was misty the last two nights. Should I water less?' },
-          { t: 21, who: 'WHH hotline', text: 'Water in the morning only. Call us if spots appear.' },
-        ],
-      },
-    ],
-    steps: [
-      { title: 'Apply “Protectant” Sprays', sub: 'The Invisible Shield' },
-      { title: 'Dry Out the Field', sub: 'Change the Microclimate' },
-      { title: 'Pause High-Nitrogen Fertilizers' },
-      { title: 'Lock Down Field Movement' },
-      { title: 'Intensify Lower-Canopy Scouting' },
-    ],
+    alerts: [],
   },
   f03: {
     phone: '0723 905 316',
@@ -110,10 +75,12 @@ const DETAILS = {
         { t: 10, who: 'Farmer', text: 'The young leaves are yellow with green patches, and some are twisted. It started on a few plants near the path, now more.' },
         { t: 22, who: 'WHH hotline', text: 'Where did the cuttings come from?' },
         { t: 26, who: 'Farmer', text: 'From my neighbour. I also see many small white flies under the leaves.' },
-        { t: 35, who: 'WHH hotline', text: 'Please send photos. Felix will visit you this week.' },
+        { t: 35, who: 'WHH hotline', text: 'Please send photos. Hoang will visit you this week.' },
       ],
     },
   },
+  // f04 is backed by box-02 (field-b): the late-blight showcase. Live risk + AI finding come from
+  // the backend; these static sensors are the offline fallback and lean red to match.
   f04: {
     ownerPhoto: ownerF04,
     phone: '0734 210 655',
@@ -122,11 +89,12 @@ const DETAILS = {
     lastVisit: '2 Oct — regular check, no issues',
     sensorsUpdated: '3 h ago',
     sensors: {
-      humidity: { value: 66, status: 'ok', note: 'In range', history: [64, 65, 67, 66, 65, 66, 66] },
-      temperature: { value: 25, status: 'ok', note: 'In range', history: [25, 26, 25, 24, 25, 25, 25] },
-      leafWetness: { value: 4, status: 'ok', note: 'In range', history: [3, 4, 5, 4, 4, 3, 4] },
-      soilMoisture: { value: 29, status: 'ok', note: 'In range', history: [31, 30, 30, 29, 30, 29, 29] },
+      humidity: { value: 93, status: 'alert', note: 'Above 90 % for several nights', history: [80, 85, 90, 92, 94, 93, 93] },
+      temperature: { value: 20, status: 'warn', note: '18–22 °C favours blight', history: [24, 23, 22, 21, 20, 20, 20] },
+      leafWetness: { value: 11, status: 'alert', note: 'Above 10 h for several days', history: [6, 7, 9, 10, 11, 12, 11] },
+      soilMoisture: { value: 33, status: 'ok', note: 'In range', history: [30, 31, 33, 35, 36, 34, 33] },
     },
+    disease: 'late blight',
     alerts: [],
   },
   f05: {
@@ -144,6 +112,8 @@ const DETAILS = {
     },
     alerts: [],
   },
+  // f14 is backed by box-03 (field-d): a synthetic medium-risk field. Live risk + AI finding come
+  // from the backend; these static sensors are the offline fallback and lean yellow (warn, no alert).
   f14: {
     ownerPhoto: ownerF14,
     phone: '0756 120 433',
@@ -152,11 +122,12 @@ const DETAILS = {
     lastVisit: '3 Oct — regular check, no issues',
     sensorsUpdated: '2 h ago',
     sensors: {
-      humidity: { value: 68, status: 'ok', note: 'In range', history: [66, 67, 69, 68, 67, 68, 68] },
-      temperature: { value: 26, status: 'ok', note: 'In range', history: [26, 27, 26, 25, 26, 26, 26] },
-      leafWetness: { value: 3, status: 'ok', note: 'In range', history: [3, 3, 4, 3, 3, 2, 3] },
+      humidity: { value: 83, status: 'warn', note: 'Elevated, watch overnight', history: [74, 77, 80, 82, 84, 83, 83] },
+      temperature: { value: 21, status: 'warn', note: '18–22 °C favours blight', history: [25, 24, 23, 22, 21, 21, 21] },
+      leafWetness: { value: 7, status: 'warn', note: 'Rising wet hours', history: [3, 4, 5, 6, 7, 7, 7] },
       soilMoisture: { value: 27, status: 'ok', note: 'In range', history: [28, 28, 27, 27, 28, 27, 27] },
     },
+    disease: 'late blight',
     alerts: [],
   },
   f15: {
