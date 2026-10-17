@@ -40,15 +40,15 @@ class RiskColor(str, Enum):
 
 
 class Step(BaseModel):
-    title: str = Field(description="Short imperative action title the officer can scan quickly.")
-    sub: str = Field(description="One-line elaboration or rationale. Empty string if nothing to add.")
+    title: str = Field(description="Short imperative action title the officer can scan quickly. A few plain words, no dashes.")
+    sub: str = Field(description="One short, plain line of elaboration, no dashes. Empty string if nothing to add.")
 
 
 class RiskScore(BaseModel):
     color: RiskColor = Field(description="Traffic-light risk level for this field.")
     score: int = Field(description="Risk score 0-100 (higher = more urgent). Validated/clamped in code.")
-    reasoning: str = Field(description="Which concrete signals drove the score, in 1-3 sentences.")
-    recommended_action: str = Field(description="The single next action for the field officer.")
+    reasoning: str = Field(description="Which concrete signals drove the score, in 1 or 2 short, plain sentences. No dashes.")
+    recommended_action: str = Field(description="The single next action for the field officer. One short, plain sentence. No dashes.")
     data_caveats: str = Field(description="Data-quality caveats (stale/missing/implausible/stuck sensors). Empty string if none.")
     steps: list[Step] = Field(
         description="2-5 concrete, prioritised steps the officer should take on this field, most important first."
@@ -222,8 +222,12 @@ _SYSTEM_PROMPT = (
     "In that case raise caution, keep the score mid-range at least, and explain the data gap in data_caveats.\n"
     "- A favourable micro-climate indicates CONDITIONS for risk, not a confirmed infection; "
     "recommend an inspection, not a treatment.\n"
-    "- Keep reasoning and recommended_action short and concrete.\n"
+    "- Keep reasoning and recommended_action very short, simple and plain. "
+    "One idea per short sentence, so a non-expert can understand them at a glance.\n"
+    "- Never use dashes in any text you return (no em dash, no en dash, no hyphen used as a dash). "
+    "Use short separate sentences or commas instead.\n"
     "- In `steps`, give 2-5 prioritised actions for the officer (most important first). "
+    "Keep each step short and plain. "
     "When risk is low or data is missing, the steps are about inspection and data recovery, not treatment."
 )
 
