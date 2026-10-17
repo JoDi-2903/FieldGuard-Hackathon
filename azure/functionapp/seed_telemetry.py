@@ -10,6 +10,11 @@ optionally triggers a scoring run so risk/alerts/call/steps are ready immediatel
   box-02  -> blight-favourable:   high overnight humidity + mild temps + rain
              (expected yellow/red; this is the field-b "late blight" showcase)
 
+A device backed by real hardware (e.g. box-01, a live Arduino) should NOT be
+demo-seeded: the synthetic rows would pollute its real stream. Exclude it with
+SEED_SKIP_DEVICES=box-01 (the automatic Terraform deploy passes this), or pick an
+explicit allow-list with SEED_DEVICES.
+
 Usage:
     export API_BASE_URL="$(terraform output -raw api_base_url)"      # https://<func>/api
     export INGEST_SHARED_SECRET="<the same secret set on the Function App>"
@@ -19,6 +24,8 @@ Env:
     API_BASE_URL           required, e.g. https://fieldguard-func-xxxx.azurewebsites.net/api
     INGEST_SHARED_SECRET   required, matches the Function App app setting
     SEED_DAYS              optional, default 3
+    SEED_DEVICES           optional, comma-separated allow-list (default: all known devices)
+    SEED_SKIP_DEVICES      optional, comma-separated devices to exclude (e.g. live hardware "box-01")
     SKIP_SCORE             optional, set to 1 to skip the final /score_now call
 """
 
@@ -91,6 +98,22 @@ def _post(url: str, payload, headers: dict) -> dict:
         return json.loads(resp.read().decode("utf-8") or "{}")
 
 
+def _select_devices() -> dict:
+    """Resolve which demo devices to seed from SEED_DEVICES / SEED_SKIP_DEVICES.
+
+    Real hardware (e.g. the live box-01 Arduino) must be excluded so synthetic
+    rows never pollute its real stream — the Terraform deploy passes
+    SEED_SKIP_DEVICES for exactly this.
+    """
+    def _csv(name: str) -> set[str]:
+        return {d.strip() for d in os.environ.get(name, "").split(",") if d.strip()}
+
+    allow = _csv("SEED_DEVICES")
+    skip = _csv("SEED_SKIP_DEVICES")
+    selected = {d: fn for d, fn in DEVICES.items() if (not allow or d in allow) and d not in skip}
+    return selected
+
+
 def main() -> int:
     base = os.environ.get("API_BASE_URL", "").rstrip("/")
     secret = os.environ.get("INGEST_SHARED_SECRET", "")
@@ -102,8 +125,16 @@ def main() -> int:
     now = dt.datetime.now(dt.timezone.utc)
     headers = {"Content-Type": "application/json", "X-Ingest-Key": secret}
 
+    devices = _select_devices()
+    if not devices:
+        print("No devices selected to seed (check SEED_DEVICES / SEED_SKIP_DEVICES). Nothing to do.")
+        return 0
+    skipped = sorted(set(DEVICES) - set(devices))
+    if skipped:
+        print(f"Skipping real/excluded devices: {', '.join(skipped)}")
+
     total_written = 0
-    for device_id, pattern in DEVICES.items():
+    for device_id, pattern in devices.items():
         readings = _generate(device_id, pattern, now, days)
         for start in range(0, len(readings), CHUNK):
             batch = readings[start:start + CHUNK]
