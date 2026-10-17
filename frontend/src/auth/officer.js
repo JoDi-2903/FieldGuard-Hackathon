@@ -3,7 +3,7 @@ import felixPhoto from '../assets/felix.png';
 // Mock data until a backend exists.
 export const OFFICER = {
   id: 'felix',
-  name: 'Felix',
+  name: 'Hoang',
   role: 'Extension Officer',
   email: 'felix@welthungerhilfe.de',
   region: 'Field District North',

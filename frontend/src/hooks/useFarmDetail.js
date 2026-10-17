@@ -3,9 +3,9 @@ import { farmDetails, SENSOR_META } from '../data/farmDetails.js';
 import { fieldIdForFarm } from '../data/farmFieldMap.js';
 import { getFarmDetail } from '../api/client.js';
 
-// Poll cadence for the latest sensor dataset. Ingest is ~5 min, scoring ~20 min,
-// so a 20 s poll keeps the profile fresh without hammering the API.
-const POLL_MS = 20000;
+// Poll cadence for the latest sensor dataset. box-01 posts every 2 s, so we match
+// that cadence here so tile values update as fast as the Arduino sends.
+const POLL_MS = 2000;
 
 // The Finding on the farm profile: the AI reasoning as headline, plus one line per
 // sensor that is out of range (same order and colours as the KPI tiles).

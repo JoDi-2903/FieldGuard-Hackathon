@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { getReadings } from '../api/client.js';
 
-const POLL_MS = 5000; // the box posts every 5 s in demo mode
-const WINDOW = 120; // readings kept in the charts (10 min at 5 s)
+const POLL_MS = 2000; // the box posts every 2 s
+const WINDOW = 120; // readings kept in the charts (~4 min at 2 s)
 
 const jitter = (v, amp) => v + (Math.random() - 0.5) * amp;
 
