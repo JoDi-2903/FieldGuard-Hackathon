@@ -1,5 +1,5 @@
 // Field box that sends its readings straight to the Azure backend over WiFi.
-// Every 5 s it measures all sensors and POSTs the unsent readings as one JSON array
+// Every 3 s it measures all sensors and POSTs the unsent readings as one JSON array
 // to /api/ingest (see "Arduino HTTP contract" in azure/README.md).
 // Every 30 s it asks /api/light for this box's risk colour and shows it on the LED traffic light.
 // Copy arduino_secrets.h.template to arduino_secrets.h and fill it in before uploading.
@@ -39,7 +39,7 @@ const int SOIL_RAW_DRY = 985;            // 0 % soil moisture
 const int SOIL_RAW_WET = 670;            // 100 % soil moisture
 
 // --- Timing -------------------------------------------------------------------
-const unsigned long SAMPLE_INTERVAL_MS = 5000UL;  // demo; use 900000UL (15 min) in the field
+const unsigned long SAMPLE_INTERVAL_MS = 3000UL;  // demo; use 900000UL (15 min) in the field
 const unsigned long LIGHT_POLL_INTERVAL_MS = 30000UL;
 const unsigned long RTC_RESYNC_INTERVAL_MS = 3600000UL;  // the R4 RTC drifts, so resync hourly
 const unsigned long WIFI_CONNECT_WAIT_MS = 10000UL;
@@ -50,7 +50,7 @@ const uint8_t SAMPLES_PER_READING = 5;
 const unsigned int DHT_STARTUP_MS = 2000;  // DHT11 needs ~1-2 s after power-up
 
 // --- Offline backlog: unsent readings, oldest dropped when full --------------
-const uint8_t MAX_BACKLOG = 36;  // 3 minutes at one reading every 5 s
+const uint8_t MAX_BACKLOG = 36;  // ~108 s at one reading every 3 s
 
 struct ContractReading {
   time_t timestamp;

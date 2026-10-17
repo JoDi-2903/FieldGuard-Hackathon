@@ -10,7 +10,7 @@ const uint8_t PIN_LED_GREEN = 11;
 const uint8_t PIN_RAIN_ANALOG = A0;
 const uint8_t PIN_SOIL_ANALOG = A1;
 
-const unsigned long READ_INTERVAL_MS = 60000UL;  // 1 min for testing; use 600000UL (10 min) in the field
+const unsigned long READ_INTERVAL_MS = 3000UL;  // 3 s for demo; use 600000UL (10 min) in the field
 const unsigned int SENSOR_WARMUP_MS = 200;
 const uint8_t SAMPLES_PER_READING = 5;
 
