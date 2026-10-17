@@ -47,7 +47,7 @@ class Step(BaseModel):
 class RiskScore(BaseModel):
     color: RiskColor = Field(description="Traffic-light risk level for this field.")
     score: int = Field(description="Risk score 0-100 (higher = more urgent). Validated/clamped in code.")
-    reasoning: str = Field(description="ONE very short, plain sentence naming the single main signal behind the score. Do NOT repeat the raw sensor numbers or units; they are already shown to the officer. No dashes.")
+    reasoning: str = Field(description="EXACTLY one plain sentence of AT MOST 10 words naming the single main signal behind the score. Do NOT repeat the raw sensor numbers or units; they are already shown to the officer. No dashes.")
     recommended_action: str = Field(description="The single next action for the field officer. One short, plain sentence. No dashes.")
     data_caveats: str = Field(description="Data-quality caveats (stale/missing/implausible/stuck sensors). Empty string if none.")
     steps: list[Step] = Field(
@@ -222,9 +222,9 @@ _SYSTEM_PROMPT = (
     "In that case raise caution, keep the score mid-range at least, and explain the data gap in data_caveats.\n"
     "- A favourable micro-climate indicates CONDITIONS for risk, not a confirmed infection; "
     "recommend an inspection, not a treatment.\n"
-    "- `reasoning` must be a SINGLE very short sentence that names only the one main signal behind "
-    "the score. Do not list every signal and do not restate the raw sensor values or units, as the "
-    "officer already sees those on the tiles above. "
+    "- `reasoning` must be EXACTLY one plain sentence of AT MOST 10 words that names only the one "
+    "main signal behind the score. Do not list every signal and do not restate the raw sensor values "
+    "or units, as the officer already sees those on the tiles above. "
     "Keep recommended_action very short, simple and plain too, one idea per short sentence, "
     "so a non-expert can understand them at a glance.\n"
     "- Never use dashes in any text you return (no em dash, no en dash, no hyphen used as a dash). "
