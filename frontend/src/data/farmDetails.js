@@ -4,6 +4,7 @@
 // call.lines[].t = second in the recording where the line starts (drives the live transcript).
 // call.audio = URL of the recording; null until the real audio is uploaded.
 // call.summary: wrap key phrases in **…** to show them in bold.
+import ownerF01 from '../assets/owners/f01.jpg';
 import ownerF02 from '../assets/owners/f02.jpg';
 import ownerF04 from '../assets/owners/f04.jpg';
 import ownerF14 from '../assets/owners/f14.jpg';
@@ -20,10 +21,11 @@ const DETAILS = {
   // f01 is backed by the real box-01 Arduino (field-a). Sensors, risk and the AI finding
   // come from the live backend; these static values are only the offline fallback.
   f01: {
+    ownerPhoto: ownerF01,
     phone: '0701 332 884',
     address: 'Upper Valley, past the borehole, Field District North',
     stage: 'Planted 15 Sep · young plants',
-    lastVisit: '4 Oct — sensor box installed and checked',
+    lastVisit: '4 Oct · sensor box installed and checked',
     sensorsUpdated: 'waiting for live data',
     sensors: {
       humidity: { value: 64, status: 'ok', note: 'In range', history: [62, 63, 65, 64, 63, 64, 64] },
@@ -39,7 +41,7 @@ const DETAILS = {
     phone: '0712 448 190',
     address: 'Plot 7, Riverside village, Field District North',
     stage: 'Planted 12 Aug · 9 weeks · flowering',
-    lastVisit: '2 Oct — regular check, no issues',
+    lastVisit: '2 Oct · regular check, no issues',
     sensorsUpdated: '2 h ago',
     sensors: {
       humidity: { value: 68, status: 'ok', note: 'In range', history: [66, 67, 69, 68, 67, 68, 68] },
@@ -53,7 +55,7 @@ const DETAILS = {
     phone: '0723 905 316',
     address: 'Stone Hill, behind the primary school, Field District North',
     stage: 'Planted mid-July · 3 months · young plants',
-    lastVisit: '25 Sep — regular check, no issues',
+    lastVisit: '25 Sep · regular check, no issues',
     sensorsUpdated: '1 h ago',
     sensors: {
       humidity: { value: 71, status: 'ok', note: 'In range', history: [68, 70, 72, 69, 70, 73, 71] },
@@ -86,11 +88,11 @@ const DETAILS = {
     phone: '0734 210 655',
     address: 'Mango Grove, along the market road, Field District North',
     stage: 'Planted 20 Aug · 8 weeks · pods forming',
-    lastVisit: '2 Oct — regular check, no issues',
+    lastVisit: '2 Oct · regular check, no issues',
     sensorsUpdated: '3 h ago',
     sensors: {
       humidity: { value: 93, status: 'alert', note: 'Above 90 % for several nights', history: [80, 85, 90, 92, 94, 93, 93] },
-      temperature: { value: 20, status: 'warn', note: '18–22 °C favours blight', history: [24, 23, 22, 21, 20, 20, 20] },
+      temperature: { value: 20, status: 'warn', note: '18 to 22 °C favours blight', history: [24, 23, 22, 21, 20, 20, 20] },
       leafWetness: { value: 11, status: 'alert', note: 'Above 10 h for several days', history: [6, 7, 9, 10, 11, 12, 11] },
       soilMoisture: { value: 33, status: 'ok', note: 'In range', history: [30, 31, 33, 35, 36, 34, 33] },
     },
@@ -102,7 +104,7 @@ const DETAILS = {
     phone: '0745 377 802',
     address: 'Lake Road, 2 km past the bridge, Field District North',
     stage: 'Planted mid-June · 4 months · near maturity',
-    lastVisit: '2 Oct — regular check, no issues',
+    lastVisit: '2 Oct · regular check, no issues',
     sensorsUpdated: '2 h ago',
     sensors: {
       humidity: { value: 62, status: 'ok', note: 'In range', history: [60, 61, 63, 62, 61, 62, 62] },
@@ -119,11 +121,11 @@ const DETAILS = {
     phone: '0756 120 433',
     address: 'Valley View, above the mango grove, Field District North',
     stage: 'Planted early June · 4 months · roots bulking',
-    lastVisit: '3 Oct — regular check, no issues',
+    lastVisit: '3 Oct · regular check, no issues',
     sensorsUpdated: '2 h ago',
     sensors: {
       humidity: { value: 83, status: 'warn', note: 'Elevated, watch overnight', history: [74, 77, 80, 82, 84, 83, 83] },
-      temperature: { value: 21, status: 'warn', note: '18–22 °C favours blight', history: [25, 24, 23, 22, 21, 21, 21] },
+      temperature: { value: 21, status: 'warn', note: '18 to 22 °C favours blight', history: [25, 24, 23, 22, 21, 21, 21] },
       leafWetness: { value: 7, status: 'warn', note: 'Rising wet hours', history: [3, 4, 5, 6, 7, 7, 7] },
       soilMoisture: { value: 27, status: 'ok', note: 'In range', history: [28, 28, 27, 27, 28, 27, 27] },
     },
@@ -134,7 +136,7 @@ const DETAILS = {
     phone: '0767 884 219',
     address: 'Clay Pot Farm, near the water point, Field District North',
     stage: 'Planted late June · 4 months · heads filling',
-    lastVisit: '3 Oct — regular check, no issues',
+    lastVisit: '3 Oct · regular check, no issues',
     sensorsUpdated: '1 h ago',
     sensors: {
       humidity: { value: 60, status: 'ok', note: 'In range', history: [59, 60, 61, 60, 59, 60, 60] },
