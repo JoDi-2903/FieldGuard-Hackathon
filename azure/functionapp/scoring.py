@@ -40,18 +40,18 @@ class RiskColor(str, Enum):
 
 
 class Step(BaseModel):
-    title: str = Field(description="Short imperative action title the officer can scan quickly. A few plain words, no dashes.")
-    sub: str = Field(description="One short, plain line of elaboration, no dashes. Empty string if nothing to add.")
+    title: str = Field(description="Very short imperative action, two to four plain words the officer can scan at a glance. No dashes.")
+    sub: str = Field(description="At most one short, plain half-sentence of elaboration, no dashes. Prefer an empty string when the title already says enough.")
 
 
 class RiskScore(BaseModel):
     color: RiskColor = Field(description="Traffic-light risk level for this field.")
     score: int = Field(description="Risk score 0-100 (higher = more urgent). Validated/clamped in code.")
-    reasoning: str = Field(description="Which concrete signals drove the score, in 1 or 2 short, plain sentences. No dashes.")
+    reasoning: str = Field(description="ONE very short, plain sentence naming the single main signal behind the score. Do NOT repeat the raw sensor numbers or units; they are already shown to the officer. No dashes.")
     recommended_action: str = Field(description="The single next action for the field officer. One short, plain sentence. No dashes.")
     data_caveats: str = Field(description="Data-quality caveats (stale/missing/implausible/stuck sensors). Empty string if none.")
     steps: list[Step] = Field(
-        description="2-5 concrete, prioritised steps the officer should take on this field, most important first."
+        description="2-4 concrete, prioritised steps the officer should take on this field, most important first. Keep each one short."
     )
 
 
@@ -63,9 +63,9 @@ class CallLine(BaseModel):
 
 class FarmerCall(BaseModel):
     meta: str = Field(description="Header line, e.g. 'Farmer hotline - 15 Oct, 07:40 - 0:52 - translated'.")
-    summary: str = Field(description="2-3 sentence summary of what the farmer reports.")
+    summary: str = Field(description="One short sentence summarising what the farmer reports.")
     duration: int = Field(description="Call length in seconds; a few seconds after the last line's t.")
-    lines: list[CallLine] = Field(description="Chronological transcript, 5-9 short lines, Farmer and WHH hotline alternating.")
+    lines: list[CallLine] = Field(description="Chronological transcript, 3-5 short lines, Farmer and WHH hotline alternating.")
 
 
 class AlertItem(BaseModel):
@@ -222,12 +222,16 @@ _SYSTEM_PROMPT = (
     "In that case raise caution, keep the score mid-range at least, and explain the data gap in data_caveats.\n"
     "- A favourable micro-climate indicates CONDITIONS for risk, not a confirmed infection; "
     "recommend an inspection, not a treatment.\n"
-    "- Keep reasoning and recommended_action very short, simple and plain. "
-    "One idea per short sentence, so a non-expert can understand them at a glance.\n"
+    "- `reasoning` must be a SINGLE very short sentence that names only the one main signal behind "
+    "the score. Do not list every signal and do not restate the raw sensor values or units, as the "
+    "officer already sees those on the tiles above. "
+    "Keep recommended_action very short, simple and plain too, one idea per short sentence, "
+    "so a non-expert can understand them at a glance.\n"
     "- Never use dashes in any text you return (no em dash, no en dash, no hyphen used as a dash). "
     "Use short separate sentences or commas instead.\n"
-    "- In `steps`, give 2-5 prioritised actions for the officer (most important first). "
-    "Keep each step short and plain. "
+    "- In `steps`, give 2-4 prioritised actions for the officer (most important first). "
+    "Keep each title to a few plain words and each sub to at most one short half-sentence; "
+    "leave sub empty when the title is clear on its own. "
     "When risk is low or data is missing, the steps are about inspection and data recovery, not treatment."
 )
 
@@ -323,7 +327,8 @@ _CALL_SYSTEM_PROMPT = (
     "The farmer describes, in plain first-person language, symptoms consistent with the field's crop, "
     "known cases and risk verdict (what they SEE on the plants); the hotline asks brief clarifying questions "
     "and ends by advising an officer visit. Ground the symptoms in the provided context and signals; "
-    "do not quote sensor numbers. 5-9 short lines, speakers alternating, Farmer first. "
+    "do not quote sensor numbers. Keep it brief: 3-5 short lines, speakers alternating, Farmer first, "
+    "and a one-sentence summary. "
     "Timestamps `t` are increasing whole seconds; `duration` is a few seconds after the last line."
 )
 
