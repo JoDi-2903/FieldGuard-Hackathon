@@ -4,7 +4,7 @@ export const FIELD_OFFICE = { name: 'WHH field office', pos: { x: 50, y: 250 } }
 
 export const FARMS = [
   { id: 'f01', name: 'Hillside Farm', owner: 'Grace Achieng', village: 'Upper Valley', crop: 'Maize', hectares: 1.2, pos: { x: 120, y: 192 } },
-  { id: 'f02', name: 'Riverside Plot', owner: 'Joseph Banda', village: 'Riverside', crop: 'Potatoes', hectares: 0.8, pos: { x: 178, y: 112 } },
+  { id: 'f02', name: 'Riverside Plot', owner: 'Grace Banda', village: 'Riverside', crop: 'Maize', hectares: 0.8, pos: { x: 178, y: 112 } },
   { id: 'f03', name: 'Stone Hill Farm', owner: 'Amina Hassan', village: 'Stone Hill', crop: 'Cassava', hectares: 1.5, pos: { x: 262, y: 64 } },
   { id: 'f04', name: 'Mango Grove', owner: 'Peter Okoth', village: 'Mango Grove', crop: 'Beans', hectares: 0.6, pos: { x: 338, y: 128 } },
   { id: 'f05', name: 'Lake Road Farm', owner: 'Mary Phiri', village: 'Lake Road', crop: 'Sorghum', hectares: 2.1, pos: { x: 410, y: 58 } },

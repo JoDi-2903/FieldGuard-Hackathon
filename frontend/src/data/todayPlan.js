@@ -6,6 +6,9 @@
 // type: 'regular' | 'warning' (sensors flagged a risk) | 'help' (farmer reached out)
 // summary: one-line data-based finding for the list; finding/focus: detail for the farm profile.
 // travelMin / travelKm: the drive to this farm from the previous stop.
+//
+// Not on today's route: Stone Hill Farm (f03, help request about cassava mosaic) —
+// its details and call recording stay in farmDetails.js; add it back here to schedule it.
 export const TODAY_PLAN = {
   visits: [
     {
@@ -19,16 +22,6 @@ export const TODAY_PLAN = {
       focus: 'Inspect lower leaves, advise preventive spraying and wider spacing for airflow.',
     },
     {
-      farmId: 'f03',
-      summary: 'Farmer reports yellow, mottled leaves — possible cassava mosaic',
-      type: 'help',
-      durationMin: 90,
-      travelMin: 25,
-      travelKm: 11,
-      finding: 'Farmer sent photos of yellow, mottled leaves on young plants (2 days ago).',
-      focus: 'Check for cassava mosaic disease, remove infected plants, source clean cuttings.',
-    },
-    {
       farmId: 'f04',
       summary: 'Regular visit — all data normal',
       type: 'regular',
@@ -39,16 +32,36 @@ export const TODAY_PLAN = {
       focus: 'Routine check and timing for dry-bean harvest.',
     },
     {
+      farmId: 'f14',
+      summary: 'Regular visit — all data normal',
+      type: 'regular',
+      durationMin: 45,
+      travelMin: 20,
+      travelKm: 8,
+      finding: 'All sensor readings normal and no concerns reported. Roots are bulking.',
+      focus: 'Weeding and check young leaves for early mosaic signs.',
+    },
+    {
       farmId: 'f05',
       summary: 'Regular visit — all data normal',
       type: 'regular',
       durationMin: 60,
-      travelMin: 30,
-      travelKm: 13,
+      travelMin: 20,
+      travelKm: 7,
       finding: 'All readings normal. Crop is close to maturity.',
       focus: 'Bird protection, drying and safe storage.',
     },
+    {
+      farmId: 'f15',
+      summary: 'Regular visit — all data normal',
+      type: 'regular',
+      durationMin: 45,
+      travelMin: 25,
+      travelKm: 9,
+      finding: 'All readings normal. Heads are filling.',
+      focus: 'Harvest timing and storage pests.',
+    },
   ],
   returnTravelMin: 40,
-  returnTravelKm: 18,
+  returnTravelKm: 20,
 };
