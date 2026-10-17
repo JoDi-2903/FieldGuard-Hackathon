@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from 'react';
 // node boxes: x, y, w, h (viewBox 820 × 640)
 const NODES = {
   sensor: { x: 16, y: 92, w: 168, h: 96, title: 'Sensor box', sub: 'Arduino UNO R4 WiFi', outside: 'In the field' },
-  browser: { x: 16, y: 452, w: 168, h: 96, title: 'Field Guard', sub: "Officer's browser", outside: 'Felix' },
+  browser: { x: 16, y: 452, w: 168, h: 96, title: 'Field Guard', sub: "Officer's browser", outside: 'Hoang' },
   func: { x: 262, y: 128, w: 252, h: 196, title: 'Function App', sub: 'azurerm_linux_function_app · Python' },
   storage: { x: 588, y: 64, w: 214, h: 196, title: 'Storage account', sub: 'azurerm_storage_account' },
   openai: { x: 588, y: 312, w: 214, h: 96, title: 'Azure OpenAI', sub: 'azurerm_cognitive_deployment' },

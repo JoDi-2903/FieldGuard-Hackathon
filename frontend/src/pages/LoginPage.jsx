@@ -136,7 +136,7 @@ export default function LoginPage({ onSignedIn }) {
                 Use another account
               </button>
             </p>
-            <p className="login__demo">Demo access: felix / demo</p>
+            <p className="login__demo">Demo access: hoang / demo</p>
           </form>
         </div>
       </section>

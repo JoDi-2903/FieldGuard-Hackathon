@@ -1,14 +1,14 @@
-import felixPhoto from '../assets/felix.png';
+import hoangPhoto from '../assets/hoang.png';
 
 // Mock data until a backend exists.
 export const OFFICER = {
-  id: 'felix',
+  id: 'hoang',
   name: 'Hoang',
   role: 'Extension Officer',
-  email: 'felix@welthungerhilfe.de',
+  email: 'hoang@welthungerhilfe.de',
   region: 'Field District North',
   assignedFarmers: 20,
-  photo: felixPhoto,
+  photo: hoangPhoto,
 };
 
 // Demo credentials — replace with a real auth call later.
