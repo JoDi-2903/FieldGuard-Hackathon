@@ -47,15 +47,21 @@ function merge(base, live) {
   if (live.stage) merged.stage = live.crop ? live.stage.replace(new RegExp(` · ${live.crop}$`, 'i'), '') : live.stage;
   if (live.risk) {
     merged.risk = live.risk;
-    merged.disease = live.disease ?? null;
+    merged.disease = live.disease ?? merged.disease ?? null;
     merged.alerts = live.alerts ?? [];
-    if (live.risk.reasoning) merged.finding = liveFinding(live);
     if (live.call) {
       merged.call = { ...live.call, meta: shortMeta(live.call.meta) };
       merged.calls = [merged.call]; // the backend stores one call per scoring run
     }
-    if (live.steps && live.steps.length)
-      merged.steps = live.steps.map((s) => ({ ...s, title: undash(s.title), sub: undash(s.sub) }));
+    if (base?.pinned) {
+      // Demo farm: keep the hardcoded AI summary + steps, but let the per-sensor reason
+      // lines follow the live tiles so they still match the Arduino readings.
+      merged.finding = { ...(base.finding ?? {}), reasons: liveFinding(live).reasons };
+    } else {
+      if (live.risk.reasoning) merged.finding = liveFinding(live);
+      if (live.steps && live.steps.length)
+        merged.steps = live.steps.map((s) => ({ ...s, title: undash(s.title), sub: undash(s.sub) }));
+    }
   }
   return merged;
 }

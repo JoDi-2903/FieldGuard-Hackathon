@@ -35,7 +35,22 @@ const DETAILS = {
       leafWetness: { value: 13, status: 'alert', note: 'Above 10 h/day', history: [4, 6, 8, 10, 12, 13, 13] },
       soilMoisture: { value: 0, status: 'alert', note: 'Very dry root zone', history: [20, 16, 12, 8, 4, 1, 0] },
     },
-    sensorNote: 'Leaf wetness is high and the root zone is very dry. Worth a close look.',
+    // Pinned demo content: the AI summary (finding.title) and the steps are hardcoded and never
+    // overwritten by the backend. Only the 4 sensor tiles (and the per-sensor reason lines derived
+    // from them) stay live from the Arduino. See useFarmDetail.merge() and FORCED_RISK.
+    pinned: true,
+    disease: 'late blight',
+    finding: {
+      title: 'Long leaf wetness signals high late blight risk.',
+      reasons: [],
+    },
+    steps: [
+      { title: 'Apply a protectant spray', sub: 'Coat healthy foliage to shield it before infection sets in.' },
+      { title: 'Dry out the field', sub: 'Widen spacing and clear weeds to break the humid microclimate.' },
+      { title: 'Pause high-nitrogen fertiliser', sub: 'Soft, lush new growth is far more prone to blight.' },
+      { title: 'Lock down field movement', sub: 'Limit foot traffic and tools that carry spores between plants.' },
+      { title: 'Scout the lower canopy', sub: 'Check shaded lower leaves closely for the first lesions.' },
+    ],
     alerts: [],
   },
   // Riverside is now a routine farm (its sensor box moved to f01, its blight role to f04).
