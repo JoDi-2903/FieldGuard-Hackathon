@@ -79,7 +79,7 @@ export default function Dashboard({ officer, onSignOut, onOpenFarm }) {
               </span>
             </div>
           </div>
-          <DayCalendar events={day.events} selectedId={selectedId} onSelect={setSelectedId} onOpen={onOpenFarm} now={today} />
+          <DayCalendar events={day.events} selectedId={selectedId} onSelect={setSelectedId} onOpen={onOpenFarm} />
         </section>
 
         <div className="dash__right">

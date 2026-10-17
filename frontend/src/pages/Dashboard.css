@@ -186,7 +186,7 @@
 
 .cal {
   position: relative;
-  margin: 10px 0 12px 46px;
+  margin: 30px 0 12px 46px;
 }
 
 .cal__line {
@@ -436,6 +436,15 @@
   height: 10px;
   border-radius: 50%;
   background: var(--green-dark);
+}
+
+.cal__now-label {
+  position: absolute;
+  left: -46px;
+  top: -8px;
+  font: 700 13px/16px var(--f-head);
+  color: var(--green-dark);
+  white-space: nowrap;
 }
 
 /* map — grey landscape, green route (like the WHH project map) */

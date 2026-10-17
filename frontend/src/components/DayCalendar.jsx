@@ -31,18 +31,14 @@ function CarIcon() {
   );
 }
 
-export default function DayCalendar({ events, selectedId, onSelect, onOpen, now = new Date() }) {
-  const nowMin = now.getHours() * 60 + now.getMinutes();
-  const showNow = nowMin > DAY_START && nowMin < DAY_END;
+export default function DayCalendar({ events, selectedId, onSelect, onOpen }) {
   const scrollRef = useRef(null);
 
-  // Start at "now" during the working day, otherwise at the first visit.
+  // Demo: the officer's day starts at 7AM. The "now" marker is hardcoded to 7AM and pinned to
+  // the top of the schedule (7AM sits just above the 08:00 start) to match the pitch.
   useEffect(() => {
     const el = scrollRef.current;
-    if (!el) return;
-    const firstVisit = events.find((e) => e.kind === 'visit');
-    const target = showNow ? nowMin - 30 : (firstVisit?.start ?? DAY_START) - 45;
-    el.scrollTop = Math.max(0, (target - DAY_START) * PX_PER_MIN);
+    if (el) el.scrollTop = 0;
     // only on first render
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -114,7 +110,10 @@ export default function DayCalendar({ events, selectedId, onSelect, onOpen, now 
           })}
         </div>
 
-        {showNow && <div className="cal__now" style={{ top: pct(nowMin) }} aria-label={`Now ${formatTime(nowMin)}`} />}
+        {/* Hardcoded "now" marker for the pitch: the officer's day starts at 7AM. */}
+        <div className="cal__now" style={{ top: -16 }} aria-label="Now 7AM">
+          <span className="cal__now-label">7AM</span>
+        </div>
       </div>
     </div>
   );
