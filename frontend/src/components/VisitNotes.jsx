@@ -72,7 +72,7 @@ export default function VisitNotes({ notes, onAdd }) {
       <div className="notes__list" ref={listRef}>
         {notes.length === 0 && (
           <p className="notes__empty">
-            Walk the field and record what you see — tap the microphone for a voice note, or type.
+            Walk the field and record what you see. Tap the microphone for a voice note, or type.
           </p>
         )}
         {notes.map((n) => (

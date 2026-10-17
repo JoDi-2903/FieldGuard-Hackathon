@@ -55,7 +55,7 @@ export default function RouteMap({ visits, selectedId, onSelect, onOpen }) {
         const p = at(f.pos);
         return (
           <circle key={f.id} cx={p.x} cy={p.y} r="7" fill="#BDBDC0" stroke="#fff" strokeWidth="2">
-            <title>{`${f.name} — not on today's route`}</title>
+            <title>{`${f.name} · not on today's route`}</title>
           </circle>
         );
       })}
@@ -103,7 +103,7 @@ export default function RouteMap({ visits, selectedId, onSelect, onOpen }) {
             onMouseEnter={() => onSelect(v.farmId)}
             onClick={() => onOpen(v.farmId)}
           >
-            <title>{`${v.order}. ${v.farm.name} — ${t.label} · open farm profile`}</title>
+            <title>{`${v.order}. ${v.farm.name} · ${t.label} · open farm profile`}</title>
             {/* label sits to the right so neighbouring markers stay visible */}
             <rect className="map__tag-bg" x="28" y="-13" width={w} height="26" />
             <text className="map__tag" x={28 + w / 2} y="5" textAnchor="middle">

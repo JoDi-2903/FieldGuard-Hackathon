@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import AppHeader from '../components/AppHeader.jsx';
 import SensorTile from '../components/SensorTile.jsx';
 import InfoIcon from '../components/InfoIcon.jsx';
@@ -22,8 +22,6 @@ const initials = (name) =>
     .join('')
     .slice(0, 2);
 
-const RISK_BY_COLOR = { red: 'HIGH', yellow: 'MEDIUM', green: 'LOW' };
-
 export default function FarmProfile({ officer, farmId, onOpenFarm, onBack, onSignOut }) {
   const day = useMemo(() => buildDay(TODAY_PLAN), []);
   const idx = day.visits.findIndex((v) => v.farmId === farmId);
@@ -31,8 +29,17 @@ export default function FarmProfile({ officer, farmId, onOpenFarm, onBack, onSig
   const farm = farmById[farmId];
   // static demo data, overlaid with live backend data for sensor-backed farms
   const { details, live } = useFarmDetail(farmId);
-  // the backend's AI verdict wins; otherwise derive the level from the sensor tiles
-  const risk = RISK_BY_COLOR[details?.risk?.color] ?? riskFromSensors(details?.sensors);
+  // Risk colour + label follow the live sensor tiles, re-checked on a 10 s heartbeat so the
+  // card can turn yellow or red as readings climb. The AI finding and steps keep their own
+  // (backend) cadence, so the recommendation text does not flip every few seconds.
+  const sensorsRef = useRef(details?.sensors);
+  sensorsRef.current = details?.sensors;
+  const [risk, setRisk] = useState(() => riskFromSensors(details?.sensors));
+  useEffect(() => {
+    setRisk(riskFromSensors(sensorsRef.current));
+    const id = setInterval(() => setRisk(riskFromSensors(sensorsRef.current)), 10000);
+    return () => clearInterval(id);
+  }, [farmId]);
   const [liveViewOpen, setLiveViewOpen] = useState(false);
   const s = details?.sensors;
   // starting values for the demo stream when the farm has no live box
@@ -50,7 +57,7 @@ export default function FarmProfile({ officer, farmId, onOpenFarm, onBack, onSig
   const finding = details?.finding;
   const steps = details?.steps ?? [];
   const riskWord = risk.charAt(0) + risk.slice(1).toLowerCase();
-  const [lastVisitDate, lastVisitNote] = (details?.lastVisit ?? '—').split(' — ');
+  const [lastVisitDate, lastVisitNote] = (details?.lastVisit ?? '—').split(' · ');
   return (
     <div className="profile">
       <AppHeader officer={officer} onSignOut={onSignOut} onHome={onBack} wide />
@@ -147,7 +154,11 @@ export default function FarmProfile({ officer, farmId, onOpenFarm, onBack, onSig
                     <div className="verdict-line__row">
                       <span className="risk-card__value">{riskWord}</span>
                       <span className="risk-card__caption">
-                        {details?.disease ? `risk of ${details.disease}` : 'all readings in range'}
+                        {details?.disease
+                          ? `risk of ${details.disease}`
+                          : risk === 'LOW'
+                            ? 'all readings in range'
+                            : 'sensor readings elevated'}
                       </span>
                     </div>
                   </header>
@@ -256,7 +267,7 @@ export default function FarmProfile({ officer, farmId, onOpenFarm, onBack, onSig
                 </ol>
               ) : (
                 <p className="steps-band__none">
-                  Regular check — no specific steps. Walk the field and check the crop.
+                  Regular check, no specific steps. Walk the field and check the crop.
                 </p>
               )}
             </section>
@@ -270,7 +281,7 @@ export default function FarmProfile({ officer, farmId, onOpenFarm, onBack, onSig
           farm={farm}
           deviceId={deviceIdForFarm(farmId)}
           seed={seed}
-          riskColor={details?.risk?.color ?? { HIGH: 'red', MEDIUM: 'yellow', LOW: 'green' }[risk]}
+          riskColor={{ HIGH: 'red', MEDIUM: 'yellow', LOW: 'green' }[risk]}
           onClose={() => setLiveViewOpen(false)}
         />
       )}

@@ -17,7 +17,7 @@ function liveFinding(live) {
       label: SENSOR_META[id]?.label ?? id,
       text: `**${s.value} ${SENSOR_META[id]?.unit ?? ''}**. ${undash(s.note)}`,
     }));
-  return { title: live.risk.reasoning, reasons };
+  return { title: undash(live.risk.reasoning), reasons };
 }
 
 const undash = (text) => String(text ?? '').replace(/\s+[—–-]\s+/g, ', ');
@@ -54,7 +54,8 @@ function merge(base, live) {
       merged.call = { ...live.call, meta: shortMeta(live.call.meta) };
       merged.calls = [merged.call]; // the backend stores one call per scoring run
     }
-    if (live.steps && live.steps.length) merged.steps = live.steps;
+    if (live.steps && live.steps.length)
+      merged.steps = live.steps.map((s) => ({ ...s, title: undash(s.title), sub: undash(s.sub) }));
   }
   return merged;
 }
