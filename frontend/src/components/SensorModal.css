@@ -1,0 +1,386 @@
+/* near full-screen live sensor view, WHH style: white, square, soft shadow */
+.smodal {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  background: rgba(37, 37, 43, 0.55);
+  padding: 2vh 2vw;
+}
+
+.smodal__dialog {
+  width: min(1680px, 96vw);
+  height: 92vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--white);
+  box-shadow: var(--sh-big);
+  border-top: 6px solid var(--green);
+}
+
+.smodal__head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 12px 24px;
+  flex-wrap: wrap;
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--hair);
+}
+
+.smodal__title {
+  font: 700 26px/30px var(--f-head);
+  color: var(--head);
+}
+
+.smodal__status {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font: 700 15px var(--f-head);
+  color: var(--muted);
+}
+
+.smodal__status i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--outline);
+}
+
+.smodal__status.is-live {
+  color: var(--green-dark);
+}
+
+.smodal__status.is-live i {
+  background: var(--green);
+  animation: smodal-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes smodal-pulse {
+  50% {
+    box-shadow: 0 0 0 6px rgba(47, 171, 22, 0.2);
+  }
+}
+
+.smodal__close {
+  height: 40px;
+  padding: 0 18px;
+  border: 2px solid var(--head);
+  border-radius: var(--pill);
+  background: var(--white);
+  color: var(--head);
+  font: 700 16px var(--f-head);
+  cursor: pointer;
+  transition: background var(--ease), color var(--ease);
+}
+
+.smodal__close:hover {
+  background: var(--head);
+  color: var(--white);
+}
+
+.smodal__close:focus-visible {
+  outline: 3px solid var(--green-tint);
+  outline-offset: 2px;
+}
+
+.smodal__body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 20px;
+  padding: 16px 24px 20px;
+}
+
+.smodal__metrics,
+.smodal__arch {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+
+.smodal__charts {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  overflow-y: auto;
+}
+
+/* one live metric */
+.live-chart {
+  display: grid;
+  grid-template-columns: 170px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto;
+  column-gap: 16px;
+  padding: 10px 14px 6px;
+  border: 1px solid var(--hair);
+  min-height: 110px;
+}
+
+.live-chart__head {
+  grid-row: 1 / 3;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+}
+
+.live-chart__label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font: 700 16px/20px var(--f-head);
+  color: var(--head);
+}
+
+.live-chart__value {
+  font: 800 32px/34px var(--f-head);
+  font-variant-numeric: tabular-nums;
+}
+
+.live-chart__unit {
+  font: 700 15px var(--f-head);
+  margin-left: 3px;
+}
+
+.live-chart__note {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--muted);
+}
+
+.live-chart__plot {
+  position: relative;
+  min-height: 0;
+  border-bottom: 1px solid var(--hair);
+}
+
+.live-chart__plot svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.live-chart__mark {
+  position: absolute;
+  left: 4px;
+  transform: translateY(-50%);
+  padding: 0 4px;
+  background: rgba(255, 255, 255, 0.9);
+  font: 600 11px var(--f-head);
+  color: #cf0033;
+}
+
+.live-chart__mark.is-band {
+  color: #b86d00;
+  transform: translateY(4px);
+}
+
+.live-chart__axis-y {
+  position: absolute;
+  left: 4px;
+  transform: translateY(-50%);
+  font: 600 11px var(--f-head);
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.8);
+  padding: 0 3px;
+}
+
+.live-chart__now {
+  position: absolute;
+  right: -4px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  transform: translateY(-50%);
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.9);
+}
+
+.live-chart__time {
+  grid-column: 2;
+  display: flex;
+  justify-content: space-between;
+  padding-top: 3px;
+  font: 600 11px var(--f-head);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* architecture */
+.source-tag.is-arch {
+  background: var(--green);
+  color: var(--white);
+}
+
+.flow {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  background: var(--grey-band);
+}
+
+.flow__rg {
+  fill: var(--white);
+  stroke: var(--outline);
+  stroke-dasharray: 6 6;
+}
+
+.flow__rg-label {
+  font: 700 14px var(--f-head);
+  fill: var(--muted);
+}
+
+.flow__node > rect {
+  fill: var(--white);
+  stroke: var(--hair);
+  stroke-width: 1.5;
+  transition: stroke 0.3s, fill 0.3s;
+}
+
+.flow__node.is-glowing > rect {
+  stroke: var(--green);
+  fill: #f3f9f1;
+}
+
+.flow__title {
+  font: 700 17px var(--f-head);
+  fill: var(--head);
+}
+
+.flow__sub {
+  font: 400 11.5px var(--f-text);
+  fill: var(--muted);
+}
+
+.flow__outside {
+  font: 700 12px var(--f-head);
+  fill: var(--muted);
+}
+
+.flow__row {
+  font: 600 12.5px var(--f-head);
+  fill: var(--text);
+}
+
+.flow__fn rect {
+  fill: rgba(47, 171, 22, 0.08);
+  stroke: none;
+  transition: fill 0.3s;
+}
+
+.flow__fn.is-glowing rect {
+  fill: rgba(47, 171, 22, 0.3);
+}
+
+.flow__fn text {
+  font: 600 12.5px var(--f-head);
+  fill: var(--head);
+}
+
+.flow__path {
+  fill: none;
+  stroke: var(--outline);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 5;
+}
+
+.flow__path.is-logs {
+  opacity: 0.5;
+}
+
+.flow__edge {
+  font: 600 11.5px var(--f-head);
+  fill: var(--muted);
+}
+
+.flow__edge.is-status {
+  font-size: 13px;
+  fill: var(--muted);
+}
+
+.flow__edge.is-status.is-live {
+  fill: var(--green-dark);
+}
+
+.flow__packet {
+  font: 700 11px var(--f-head);
+  fill: var(--ink);
+  paint-order: stroke;
+  stroke: var(--white);
+  stroke-width: 3px;
+}
+
+.smodal__legend {
+  flex: none;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.smodal__legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.smodal__legend i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+@media (max-width: 1099px) {
+  .smodal__dialog {
+    height: 96vh;
+  }
+
+  .smodal__body {
+    grid-template-columns: minmax(0, 1fr);
+    overflow-y: auto;
+  }
+
+  .smodal__charts {
+    overflow: visible;
+  }
+
+  .flow {
+    flex: none;
+    height: 520px;
+  }
+}
+
+@media (max-width: 600px) {
+  .live-chart {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .live-chart__head {
+    grid-row: auto;
+  }
+
+  .live-chart__time {
+    grid-column: 1;
+  }
+
+  .live-chart__plot {
+    height: 80px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .smodal__status.is-live i {
+    animation: none;
+  }
+}
