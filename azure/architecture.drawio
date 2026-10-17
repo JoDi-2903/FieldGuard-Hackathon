@@ -1,0 +1,73 @@
+<mxfile host="Electron" agent="FieldGuard">
+  <diagram name="FieldGuard Architecture" id="fieldguard-arch">
+    <mxGraphModel dx="1214" dy="942" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1320" pageHeight="860" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="text;html=1;fontSize=22;fontStyle=1;align=center;verticalAlign=middle;fontColor=#1b3a5b;" value="FieldGuard: From Field Sensors to Risk Dashboard" vertex="1">
+          <mxGeometry height="36" width="820" x="40" y="24" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" parent="1" style="text;html=1;fontSize=12;align=left;verticalAlign=middle;fontColor=#555555;" value="Sensor boxes measure weather and soil. The cloud scores crop disease risk with AI every 20 minutes. Officers see fields ranked by risk, and each box shows a traffic light." vertex="1">
+          <mxGeometry height="22" width="1000" x="40" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="fieldZone" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;verticalAlign=top;fontStyle=1;fontSize=14;fontColor=#2d5a1b;arcSize=4;" value="In the field (Arduino box)" vertex="1">
+          <mxGeometry height="510" width="270" x="40" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="cloudZone" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eef5fc;strokeColor=#6c8ebf;dashed=1;verticalAlign=top;fontStyle=1;fontSize=14;fontColor=#1b3a5b;arcSize=3;" value="Azure cloud" vertex="1">
+          <mxGeometry height="510" width="840" x="350" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="sensors" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=12;align=center;" value="Sensors&#xa;temperature, humidity, rain, soil" vertex="1">
+          <mxGeometry height="95" width="220" x="65" y="175" as="geometry" />
+        </mxCell>
+        <mxCell id="fieldbox" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=12;fontStyle=1;align=center;" value="Field box&#xa;sends readings over WiFi" vertex="1">
+          <mxGeometry height="90" width="220" x="65" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="led" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;align=center;" value="Traffic light&#xa;green, yellow, red" vertex="1">
+          <mxGeometry height="90" width="220" x="65" y="470" as="geometry" />
+        </mxCell>
+        <mxCell id="eSensor" edge="1" parent="1" source="sensors" style="endArrow=block;html=1;rounded=1;strokeColor=#82b366;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="fieldbox" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="receive" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=12;align=center;" value="Receive readings&#xa;checks and stores each reading" vertex="1">
+          <mxGeometry height="90" width="210" x="380" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="serve" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=12;align=center;" value="Serve data&#xa;risk list, field details, light colour" vertex="1">
+          <mxGeometry height="100" width="210" x="380" y="460" as="geometry" />
+        </mxCell>
+        <mxCell id="storage" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=14;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;verticalAlign=middle;align=center;" value="Storage&#xa;&#xa;sensor readings&#xa;and risk results" vertex="1">
+          <mxGeometry height="200" width="220" x="670" y="220" as="geometry" />
+        </mxCell>
+        <mxCell id="scorer" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=12;fontStyle=1;align=center;" value="Risk scoring (every 20 min)&#xa;weather rule plus AI advice&#xa;turns readings into a risk level" vertex="1">
+          <mxGeometry height="130" width="210" x="960" y="205" as="geometry" />
+        </mxCell>
+        <mxCell id="ai" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;align=center;" value="AI (Azure OpenAI)&#xa;explains the risk&#xa;and suggests actions" vertex="1">
+          <mxGeometry height="120" width="210" x="960" y="420" as="geometry" />
+        </mxCell>
+        <mxCell id="dashboard" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;" value="Web dashboard (for the officer)&#xa;fields ranked by risk&#xa;refreshes automatically" vertex="1">
+          <mxGeometry height="110" width="280" x="670" y="700" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" edge="1" parent="1" source="fieldbox" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;strokeColor=#2d5a1b;strokeWidth=2;fontSize=11;fontColor=#2d5a1b;fontStyle=1;exitX=1;exitY=0.25;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="receive" value="1  send readings">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" edge="1" parent="1" source="receive" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;strokeColor=#6c8ebf;strokeWidth=2;fontSize=11;fontColor=#1b3a5b;fontStyle=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.25;entryDx=0;entryDy=0;" target="storage" value="2  store">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" edge="1" parent="1" source="storage" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;startArrow=block;endArrow=block;strokeColor=#b46504;strokeWidth=2;fontSize=11;fontColor=#8a4b00;fontStyle=1;exitX=1;exitY=0.4;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="scorer" value="3  score every 20 min&#xa;read data, save risk">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" edge="1" parent="1" source="scorer" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;startArrow=block;endArrow=block;strokeColor=#b46504;strokeWidth=2;fontSize=11;fontColor=#8a4b00;fontStyle=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="ai" value="4  ask AI&#xa;risk and advice">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" edge="1" parent="1" source="storage" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;strokeColor=#b46504;strokeWidth=2;fontSize=11;fontColor=#8a4b00;fontStyle=1;exitX=0;exitY=0.7;exitDx=0;exitDy=0;entryX=1;entryY=0.35;entryDx=0;entryDy=0;" target="serve" value="5  provide data">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" edge="1" parent="1" source="serve" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;strokeColor=#7a4f9e;strokeWidth=2;fontSize=11;fontColor=#4a2c66;fontStyle=1;exitX=0.6;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="dashboard" value="6  show fields by risk&#xa;(auto refresh)">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" edge="1" parent="1" source="serve" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;strokeColor=#2d5a1b;strokeWidth=2;fontSize=11;fontColor=#2d5a1b;fontStyle=1;exitX=0;exitY=0.6;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="led" value="7  light colour">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
