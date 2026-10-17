@@ -17,13 +17,13 @@ export const TODAY_PLAN = {
   visits: [
     {
       farmId: 'f01',
-      summary: 'Live sensor box. Readings streaming from the field.',
-      type: 'regular',
+      summary: 'Live sensor box. Leaf wetness high and root zone dry.',
+      type: 'warning',
       durationMin: 45,
       travelMin: 20,
       travelKm: 7,
-      finding: 'Sensor box reporting live. Readings in range.',
-      focus: 'Routine check. Make sure the sensor box and solar panel sit firmly.',
+      finding: 'Long leaf wetness and a very dry root zone. Elevated risk.',
+      focus: 'Check the crop and sensor box. Advise on watering.',
     },
     {
       farmId: 'f04',

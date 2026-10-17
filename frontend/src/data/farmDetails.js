@@ -19,7 +19,9 @@ export const SENSOR_META = {
 
 const DETAILS = {
   // f01 is backed by the real box-01 Arduino (field-a). Sensors, risk and the AI finding
-  // come from the live backend; these static values are only the offline fallback.
+  // come from the live backend; these static values are only the offline fallback. They lean
+  // red (leaf wetness + dry root zone) to match the live verdict, so the card opens HIGH and
+  // does not flash green before the first live reading arrives.
   f01: {
     ownerPhoto: ownerF01,
     phone: '0701 332 884',
@@ -28,11 +30,12 @@ const DETAILS = {
     lastVisit: '4 Oct · sensor box installed and checked',
     sensorsUpdated: 'waiting for live data',
     sensors: {
-      humidity: { value: 64, status: 'ok', note: 'In range', history: [62, 63, 65, 64, 63, 64, 64] },
-      temperature: { value: 26, status: 'ok', note: 'In range', history: [25, 26, 27, 26, 26, 25, 26] },
-      leafWetness: { value: 3, status: 'ok', note: 'In range', history: [2, 3, 3, 4, 3, 2, 3] },
-      soilMoisture: { value: 31, status: 'ok', note: 'In range', history: [33, 32, 31, 31, 32, 31, 31] },
+      humidity: { value: 68, status: 'ok', note: 'In range', history: [62, 63, 65, 64, 63, 66, 68] },
+      temperature: { value: 25, status: 'ok', note: 'In range', history: [25, 26, 27, 26, 26, 25, 25] },
+      leafWetness: { value: 13, status: 'alert', note: 'Above 10 h/day', history: [4, 6, 8, 10, 12, 13, 13] },
+      soilMoisture: { value: 0, status: 'alert', note: 'Very dry root zone', history: [20, 16, 12, 8, 4, 1, 0] },
     },
+    sensorNote: 'Leaf wetness is high and the root zone is very dry. Worth a close look.',
     alerts: [],
   },
   // Riverside is now a routine farm (its sensor box moved to f01, its blight role to f04).
