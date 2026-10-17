@@ -1,6 +1,6 @@
 # Field Guard — Welthungerhilfe
 
-Dashboard for a Welthungerhilfe extension officer (Felix) who advises ~20 farmers on crop
+Dashboard for a Welthungerhilfe extension officer (Hoang) who advises ~20 farmers on crop
 disease and farm visits: login, today's priorities (schedule + route map) and a farm profile
 (sensor KPIs, AI finding, farmer's report, steps to take).
 
@@ -13,7 +13,7 @@ npm install
 npm run dev      # http://localhost:5173 — /api is proxied to the Functions host (vite.config.js)
 ```
 
-Demo login: `felix` / `demo` (mock, see `src/auth/officer.js`).
+Demo login: `hoang` / `demo` (mock, see `src/auth/officer.js`).
 
 ## Live backend data
 

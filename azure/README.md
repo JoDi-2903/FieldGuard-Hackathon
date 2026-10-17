@@ -168,7 +168,7 @@ python seed_telemetry.py
 > **Local development:** run the Function App locally (`func start`, port 7071) and, in
 > `../frontend`, `npm run dev`. Vite proxies `/api` to the local host (override with
 > `VITE_API_PROXY` in `.env`, e.g. point it at the deployed Function App). Sign in with
-> the demo officer `felix` / `demo`.
+> the demo officer `hoang` / `demo`.
 
 ---
 
